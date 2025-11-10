@@ -1,0 +1,148 @@
+// ============================================================================
+// app.rc - Resource Script for Win98 Retro Browser
+// ============================================================================
+// Định nghĩa UI resources: menus, dialogs, icons, accelerators, strings
+// Tất cả các ID phải khớp với định nghĩa trong resource.h
+// Target: Windows 98 SE / Visual C++ 6.0
+// ============================================================================
+
+#include "windows.h"
+#include "resource.h"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+// ============================================================================
+// ICONS AND CURSORS
+// ============================================================================
+
+IDI_APP_ICON ICON "res\\app.ico"
+// Icon chính của ứng dụng (16x16 + 32x32, 16-color)
+
+IDC_HAND_CURSOR CURSOR "res\\hand.cur"
+// Con trỏ tay cho hyperlinks (tính năng tùy chọn)
+
+// ============================================================================
+// MENU RESOURCE
+// ============================================================================
+
+IDR_MAIN_MENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "E&xit",                   IDM_FILE_EXIT
+    END
+
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Refresh\tF5",            IDM_VIEW_REFRESH
+        MENUITEM "View &Source",            IDM_VIEW_SOURCE
+    END
+
+    POPUP "&Navigate"
+    BEGIN
+        MENUITEM "&Back",                   IDM_NAV_BACK, GRAYED
+        MENUITEM "&Forward",                IDM_NAV_FORWARD, GRAYED
+    END
+
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About Win98 Retro Browser...",  IDM_HELP_ABOUT
+    END
+END
+
+// ============================================================================
+// ACCELERATOR TABLE (Phím tắt)
+// ============================================================================
+
+IDR_ACCELERATORS ACCELERATORS
+BEGIN
+    VK_F5,          IDM_VIEW_REFRESH,   VIRTKEY           // F5: Refresh
+    "Q",            IDM_FILE_EXIT,      VIRTKEY, CONTROL  // Ctrl+Q: Exit
+    "L",            IDM_FOCUS_ADDRESS,  VIRTKEY, CONTROL  // Ctrl+L: Focus address bar
+    // Lưu ý: Cần thêm IDM_FOCUS_ADDRESS vào resource.h
+END
+
+// ============================================================================
+// ABOUT DIALOG
+// ============================================================================
+
+IDD_ABOUT_DIALOG DIALOG 0, 0, 186, 105
+STYLE DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Win98 Retro Browser"
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDI_APP_ICON, IDC_STATIC, 7, 7, 21, 20, SS_ICON
+    LTEXT           "Win98 Retro Browser v1.0", IDC_STATIC, 35, 12, 144, 8
+    CONTROL         "", IDC_STATIC, "Static", SS_ETCHEDHORZ, 7, 25, 172, 1
+    LTEXT           "A teaching project demonstrating Win32 API, Winsock networking, and GDI rendering. Built for the Operating Systems course.", 
+                    IDC_ABOUT_TEXT, 7, 32, 172, 40
+    DEFPUSHBUTTON   "OK", IDOK, 68, 84, 50, 14, WS_GROUP
+END
+
+// ============================================================================
+// STRING TABLE
+// ============================================================================
+
+STRINGTABLE
+BEGIN
+    // Application identity (300-309)
+    IDS_APP_TITLE               "Win98 Retro Browser"
+
+    // Error messages (310-319)
+    IDS_ERROR_CONNECTION        "Connection Error\n\nFailed to connect to proxy at %s:%d.\n\nPlease ensure:\n• proxy.py is running on the host machine\n• VM network is configured (host-only or NAT)\n• Firewall allows port %d"
+    IDS_ERROR_PARSE             "HTML Parsing Error\n\nUnable to parse the page. Possible causes:\n• Unsupported tags (JavaScript, CSS, etc.)\n• Malformed HTML syntax\n• Server returned non-HTML content\n\nTry a simpler page (e.g., example.com)."
+    IDS_ERROR_404               "Page Not Found (HTTP 404)\n\nThe requested URL does not exist on the server:\n\n%s\n\nCheck the address for typos."
+    IDS_ERROR_TIMEOUT           "Connection Timeout\n\nThe server did not respond within %d seconds.\n\nPossible causes:\n• Server is down or slow\n• Network connectivity issues\n• Proxy not forwarding requests"
+    IDS_ERROR_UNKNOWN           "Unknown Error\n\nAn unexpected error occurred.\n\nError code: %d\n\nCheck proxy.py console for details."
+
+    // Status messages (320-329)
+    IDS_LOADING                 "Loading %s..."
+    IDS_DONE                    "Done"
+    IDS_READY                   "Ready"
+
+    // About dialog text (330-339)
+    IDS_ABOUT_TEXT              "Win98 Retro Browser v1.0\r\n\r\nA teaching project demonstrating Win32 API, Winsock networking, and GDI rendering.\r\n\r\nDeveloped for the Operating Systems course as a practical exercise in low-level system programming.\r\n\r\nTested on Windows 98 SE with Visual C++ 6.0.\r\n\r\nCopyright © 2025. All Rights Reserved."
+
+    // Tooltips (340-349) [Tùy chọn]
+    IDS_GO_TOOLTIP              "Navigate to the entered URL"
+    IDS_REFRESH_TOOLTIP         "Reload the current page (F5)"
+END
+
+// ============================================================================
+// VERSION INFORMATION
+// ============================================================================
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION 1,0,0,1
+    PRODUCTVERSION 1,0,0,1
+    FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+    FILEFLAGS 0x0L
+    FILEOS VOS_NT_WINDOWS32
+    FILETYPE VFT_APP
+    FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"  // US English + Unicode
+        BEGIN
+            VALUE "CompanyName",      "OS Course Project Group\0"
+            VALUE "FileDescription",  "Win98 Retro Web Browser\0"
+            VALUE "FileVersion",      "1.0.0.1\0"
+            VALUE "InternalName",     "RetroBrowser\0"
+            VALUE "LegalCopyright",   "Copyright (C) 2025. All Rights Reserved.\0"
+            VALUE "OriginalFilename", "RetroBrowser.exe\0"
+            VALUE "ProductName",      "Win98 Retro Browser\0"
+            VALUE "ProductVersion",   "1.0\0"
+            VALUE "SpecialBuild",     "Academic project - not for commercial use\0"
+            VALUE "Comments",         "Built with Visual C++ 6.0 for Windows 98 SE. Requires proxy.py running on host machine.\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 0x04B0
+    END
+END
+
+// ============================================================================
+// END OF RESOURCE SCRIPT
+// ============================================================================
