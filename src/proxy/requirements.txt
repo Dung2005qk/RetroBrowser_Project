@@ -1,0 +1,15 @@
+﻿# ===== Core Networking =====
+requests==2.31.0              # Gá»­i HTTP/HTTPS request, há»— trá»£ TLS/SSL
+urllib3==2.1.0                # Dependency chÃ­nh cá»§a requests
+certifi==2024.7.4             # Bá»™ CA gá»‘c Ä‘á»ƒ verify HTTPS
+idna==3.7                     # Domain name encoding
+charset-normalizer==3.3.2     # Äá»c mÃ£ hÃ³a text
+
+# ===== Dev Tools & Logging =====
+python-dotenv==1.0.1          # Äá»c cáº¥u hÃ¬nh tá»« file .env (vÃ­ dá»¥ PORT, LOG_LEVEL)
+colorama==0.4.6               # In mÃ u terminal dá»… Ä‘á»c (log/debug)
+loguru==0.7.2                 # Logging Ä‘áº¹p, rÃµ rÃ ng
+
+# ===== Optional / Debug =====
+rich==13.9.2                  # Giao diá»‡n log mÃ u, progress bar, debug table
+
