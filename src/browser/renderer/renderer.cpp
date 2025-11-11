@@ -276,6 +276,18 @@ void HtmlRenderer::CalculateLayout(HWND hwnd, const RECT& clientRect)
             // Line break: just advance Y
             height = BR_SPACING;
             measureRect.bottom = measureRect.top + height;
+        } else if (block.type == Parser::BLOCK_UL) {
+            // List container: minimal spacing, no content
+            height = 5; // Small spacing before list
+            measureRect.bottom = measureRect.top + height;
+        } else if (block.type == Parser::BLOCK_LI) {
+            // List item: measure with bullet indent
+            measureRect.left += 20; // Indent for bullet
+            if (!block.content.empty()) {
+                height = DrawText(hdc, block.content.c_str(), -1, &measureRect, 
+                                DT_WORDBREAK | DT_CALCRECT);
+            }
+            measureRect.left -= 20; // Restore left margin for rendering
         } else if (block.type == Parser::BLOCK_IMG) {
             // Image block: use width/height attributes if available, otherwise use placeholder size
             int imgWidth = IMAGE_PLACEHOLDER_WIDTH;
@@ -316,10 +328,11 @@ void HtmlRenderer::CalculateLayout(HWND hwnd, const RECT& clientRect)
         m_displayList.push_back(item);
         
         // Add clickable area for hyperlinks
-        if (block.type == Parser::BLOCK_A) {
+        // Support both <a> tags and <li> tags with href attribute (merged from <a>)
+        if (block.type == Parser::BLOCK_A || block.type == Parser::BLOCK_LI) {
             std::map<std::string, std::string>::const_iterator hrefIt = 
                 block.attributes.find("href");
-            if (hrefIt != block.attributes.end()) {
+            if (hrefIt != block.attributes.end() && !hrefIt->second.empty()) {
                 ClickableArea area;
                 area.bounds = measureRect;
                 area.href = hrefIt->second;
@@ -416,9 +429,12 @@ RenderResult HtmlRenderer::Render(HWND hwnd, HDC hdc, const RECT& visibleRect)
     // Clear background
     FillRect(drawDC, &clientRect, m_hBackgroundBrush);
     
-    // Calculate visible range for clipping
+    // Address bar offset (ADDRESS_BAR_HEIGHT=24 + UI_PADDING*2=4)
+    const int ADDRESS_BAR_OFFSET = 28;
+    
+    // Calculate visible range for clipping (accounting for address bar area)
     int visibleTop = m_scrollY;
-    int visibleBottom = m_scrollY + clientRect.bottom;
+    int visibleBottom = m_scrollY + clientRect.bottom - ADDRESS_BAR_OFFSET;
     
     // Render visible blocks
     for (size_t i = 0; i < m_displayList.size(); ++i) {
@@ -432,9 +448,9 @@ RenderResult HtmlRenderer::Render(HWND hwnd, HDC hdc, const RECT& visibleRect)
             break; // Below viewport (early exit)
         }
         
-        // Transform to screen coordinates
+        // Transform to screen coordinates with address bar offset
         RECT screenRect = item.bounds;
-        OffsetRect(&screenRect, 0, -m_scrollY);
+        OffsetRect(&screenRect, 0, ADDRESS_BAR_OFFSET - m_scrollY);
         
         // Check intersection with paint region
         RECT intersection;
@@ -552,14 +568,15 @@ void HtmlRenderer::OnScroll(HWND hwnd, int scrollType, int scrollPos)
 // ============================================================================
 void HtmlRenderer::OnScroll(int amount)
 {
-    // Simple scroll by a given pixel amount (positive = down, negative = up)
+    // Set scroll position to absolute Y coordinate
     // Note: This is a simplified version without HWND, used when window handle
     //       is not available. Caller is responsible for invalidating window.
+    // IMPORTANT: 'amount' is absolute position, not delta!
     
     int maxScroll = m_totalContentHeight;
     if (maxScroll < 0) maxScroll = 0;
     
-    m_scrollY += amount;
+    m_scrollY = amount;  // SET position, not ADD
     
     // Clamp to valid range [0, maxScroll]
     if (m_scrollY < 0) m_scrollY = 0;
@@ -793,6 +810,46 @@ void HtmlRenderer::RenderBlock(HDC hdc, const RenderItem& item)
             // No visual output for line break
             break;
             
+        case Parser::BLOCK_UL:
+        case Parser::BLOCK_DIV:
+        case Parser::BLOCK_SPAN:
+            // Containers - no direct rendering needed (structural only)
+            break;
+            
+        case Parser::BLOCK_LI: {
+            // Draw bullet point (Win98-compatible: Windows-1252 bullet = 0x95)
+            char bullet[4] = { (char)0x95, ' ', 0 };  // Bullet + space + null terminator
+            RECT bulletRect = screenRect;
+            bulletRect.right = bulletRect.left + 20; // Bullet width
+            SetTextColor(hdc, TEXT_COLOR);
+            DrawText(hdc, bullet, -1, &bulletRect, DT_LEFT | DT_TOP | DT_SINGLELINE);
+            
+            // Draw list item text with indent
+            RECT textRect = screenRect;
+            textRect.left += 20; // Indent for bullet
+            
+            // Check if this list item contains a link (has href attribute)
+            std::map<std::string, std::string>::const_iterator hrefIt = item.attributes.find("href");
+            bool isLink = (hrefIt != item.attributes.end() && !hrefIt->second.empty());
+            
+            if (isLink) {
+                // Render as link: blue text + underline
+                SetTextColor(hdc, LINK_COLOR);
+                DrawText(hdc, item.content.c_str(), -1, &textRect, DT_WORDBREAK);
+                
+                // Draw underline for link
+                HPEN hOldPen = (HPEN)SelectObject(hdc, m_hLinkPen);
+                MoveToEx(hdc, textRect.left, textRect.bottom - 1, NULL);
+                LineTo(hdc, textRect.right, textRect.bottom - 1);
+                SelectObject(hdc, hOldPen);
+            } else {
+                // Regular list item: normal text color
+                SetTextColor(hdc, TEXT_COLOR);
+                DrawText(hdc, item.content.c_str(), -1, &textRect, DT_WORDBREAK);
+            }
+            break;
+        }
+            
         default:
             // Unknown block type, skip
             break;
@@ -877,6 +934,10 @@ HFONT HtmlRenderer::GetFontForBlockType(Parser::BlockType blockType)
         case Parser::BLOCK_P:
         case Parser::BLOCK_IMG:
         case Parser::BLOCK_BR:
+        case Parser::BLOCK_UL:
+        case Parser::BLOCK_LI:
+        case Parser::BLOCK_DIV:
+        case Parser::BLOCK_SPAN:
         default:
             return m_hFontDefault;
     }
@@ -900,6 +961,14 @@ int HtmlRenderer::GetBlockSpacing(Parser::BlockType blockType)
             return BLOCK_SPACING_BASE / 2;
         case Parser::BLOCK_BR:
             return BR_SPACING;
+        case Parser::BLOCK_UL:
+            return BLOCK_SPACING_BASE;
+        case Parser::BLOCK_LI:
+            return BLOCK_SPACING_BASE / 3; // Small spacing between list items
+        case Parser::BLOCK_DIV:
+            return BLOCK_SPACING_BASE / 2; // Small spacing for containers
+        case Parser::BLOCK_SPAN:
+            return 0; // Inline element, no vertical spacing
         default:
             return 0;
     }

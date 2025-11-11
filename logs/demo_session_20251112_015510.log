@@ -1,0 +1,30 @@
+================================================================================
+[HEADER] 2025-11-12 01:55:10 - Win98 Retro Browser - Demo Launcher (PowerShell)
+================================================================================
+[HEADER] 2025-11-12 01:55:10 - Prerequisite Validation
+[SUCCESS] 2025-11-12 01:55:10 - Python detected: Python 3.13.2
+[INFO] 2025-11-12 01:55:10 - Validating Python packages...
+[SUCCESS] 2025-11-12 01:55:10 - Python dependencies satisfied
+[SUCCESS] 2025-11-12 01:55:10 - Proxy script found: C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\src\proxy\proxy.py
+[SUCCESS] 2025-11-12 01:55:10 - Browser executable found: C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\deploy\RetroBrowser.exe (798.5 KB)
+[SUCCESS] 2025-11-12 01:55:11 - Port 8080 is available
+[SUCCESS] 2025-11-12 01:55:11 - All prerequisites satisfied
+================================================================================
+[HEADER] 2025-11-12 01:55:11 - Starting Python Proxy Server
+[INFO] 2025-11-12 01:55:11 - Launching proxy on 0.0.0.0:8080
+[INFO] 2025-11-12 01:55:11 - Proxy started with PID: 3028
+[INFO] 2025-11-12 01:55:11 - Waiting for proxy to be ready (timeout: 10s)...
+[SUCCESS] 2025-11-12 01:55:13 - Proxy is ready and listening on 0.0.0.0:8080
+================================================================================
+[HEADER] 2025-11-12 01:55:13 - Launching Browser
+[INFO] 2025-11-12 01:55:13 - Browser executable: C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\deploy\RetroBrowser.exe
+[INFO] 2025-11-12 01:55:13 - Proxy available at: http://localhost:8080/
+[SUCCESS] 2025-11-12 01:55:41 - Browser closed
+================================================================================
+[SUCCESS] 2025-11-12 01:55:41 - Demo completed successfully
+[HEADER] 2025-11-12 01:55:41 - Cleanup & Shutdown
+[INFO] 2025-11-12 01:55:41 - Stopping proxy (PID: 3028)...
+[SUCCESS] 2025-11-12 01:55:41 - Proxy stopped
+[INFO] 2025-11-12 01:55:41 - Session duration: 31s
+[SUCCESS] 2025-11-12 01:55:41 - Cleanup completed
+================================================================================

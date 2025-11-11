@@ -327,6 +327,28 @@ namespace Parser
         ///        HTML SOURCE: <br> or <br/> (self-closing)
         BLOCK_BR,
 
+        /// @brief Unordered list container.
+        ///        RENDERING: Add vertical spacing, indent following LI items.
+        ///        HTML SOURCE: <ul>...</ul>
+        BLOCK_UL,
+
+        /// @brief List item - bullet point entry.
+        ///        RENDERING: Draw bullet point (•), render content with indent.
+        ///        HTML SOURCE: <li>List item text</li>
+        BLOCK_LI,
+
+        /// @brief Generic block-level container (div, section, article, header, footer, etc.)
+        ///        RENDERING: No visual styling, just structural container.
+        ///        HTML SOURCE: <div>, <section>, <article>, <header>, <footer>, <nav>, <main>, <aside>
+        ///        NOTE: Semantic HTML5 tags (section, article, header, etc.) are mapped to BLOCK_DIV
+        ///              for simplified rendering - they're treated as generic containers.
+        BLOCK_DIV,
+
+        /// @brief Inline container (span)
+        ///        RENDERING: Inline text styling, no line breaks.
+        ///        HTML SOURCE: <span>inline text</span>
+        BLOCK_SPAN,
+
         /// @brief Unknown or unsupported tag type.
         ///        USAGE: Placeholder for tags parser doesn't recognize (<marquee>, <blink>).
         ///        RENDERING: Typically ignored or treated as BLOCK_TEXT fallback.

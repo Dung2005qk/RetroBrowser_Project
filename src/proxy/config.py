@@ -35,6 +35,15 @@ PROXY_PORT: int = int(os.environ.get('PROXY_PORT', '8080'))
 # Giá trị hợp lệ: 1024-65535 (unprivileged ports), tránh <1024 cần root
 # Override: export PROXY_PORT=9090
 
+PROXY_BASE_URL: str = f"http://127.0.0.1:{PROXY_PORT}"
+# Base URL để rewrite image src khi ENABLE_IMAGE_PROXYING=True.
+# - Browser Win98 cần absolute URLs để fetch images qua proxy
+# - Format: http://<browser_visible_ip>:<port>
+# - 127.0.0.1: Dùng khi browser chạy trên cùng máy với proxy
+# - 192.168.x.x: Dùng khi browser chạy trên VM, proxy trên host
+# Tác động: Image tags sẽ có src="http://127.0.0.1:8080/image?url=..."
+# Override: export PROXY_BASE_URL=http://192.168.56.1:8080
+
 MAX_CONNECTIONS: int = 5
 # Hàng đợi backlog cho socket.listen() - số connections chờ xử lý đồng thời.
 # - Dự án nhỏ (1 browser client): 5 là đủ, chống overload nếu test nhiều
@@ -138,12 +147,29 @@ ENABLE_CONTENT_FILTERING: bool = True
 # Mặc định: True (an toàn), chỉ tắt khi cần test raw HTML
 
 ALLOWED_HTML_TAGS: Set[str] = {
-    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',  # Text structure
-    'a', 'img', 'br', 'hr',                    # Links, images, breaks
-    'ul', 'ol', 'li',                          # Lists
-    'b', 'i', 'u', 'strong', 'em',            # Text formatting basic
-    'div', 'span',                             # Containers (simple layout)
-    'table', 'tr', 'td', 'th'                  # Tables (nếu renderer hỗ trợ)
+    # CRITICAL: Document structure tags (MUST preserve for parser!)
+    'html', 'head', 'body', 'title',           # Essential HTML structure
+    
+    # Text structure
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',  
+    
+    # Links, images, breaks
+    'a', 'img', 'br', 'hr',                    
+    
+    # Lists
+    'ul', 'ol', 'li',                          
+    
+    # Text formatting basic
+    'b', 'i', 'u', 'strong', 'em',            
+    
+    # Containers (simple layout)
+    'div', 'span',
+    
+    # Semantic HTML5 containers (preserve structure, prevent auto-wrapping)
+    'section', 'article', 'header', 'footer', 'nav', 'main', 'aside',
+    
+    # Tables (nếu renderer hỗ trợ)
+    'table', 'tr', 'td', 'th'                  
 }
 # Whitelist các HTML tags AN TOÀN browser C++ render được.
 # - Dùng Set (không phải List) cho O(1) lookup: if tag in ALLOWED_HTML_TAGS
@@ -153,12 +179,20 @@ ALLOWED_HTML_TAGS: Set[str] = {
 # Ví dụ: <nav>, <footer> không trong list -> bị loại bỏ hoàn toàn
 
 ALLOWED_HTML_ATTRIBUTES: Dict[str, Set[str]] = {
+    # Document structure (no attributes needed)
+    'html': set(), 'head': set(), 'body': set(), 'title': set(),
+    
+    # Links and images
     'a': {'href', 'title'},
     'img': {'src', 'alt', 'width', 'height'},
+    
+    # Text containers
     'p': set(),       # Không attributes nào
     'div': set(),
     'span': set(),
     'h1': set(), 'h2': set(), 'h3': set(),
+    
+    # Tables
     'table': {'border'},
     'td': {'colspan', 'rowspan'},
     'th': {'colspan', 'rowspan'}
@@ -175,14 +209,16 @@ ALLOWED_HTML_ATTRIBUTES: Dict[str, Set[str]] = {
 BLACKLISTED_TAGS: List[str] = [
     'script', 'style', 'iframe', 'frame', 'frameset',
     'video', 'audio', 'canvas', 'svg', 'object', 'embed',
-    'applet', 'link', 'meta', 'base', 'form', 'input', 'button'
+    'applet', 'base', 'form', 'input', 'button'
 ]
 # Tags TUYỆT ĐỐI CẤM - loại bỏ tag VÀ toàn bộ content bên trong.
 # - 'script', 'style': Chặn JS/CSS hoàn toàn
 # - 'iframe', 'frame': Chống load external content, nguy hiểm
 # - 'video', 'audio', 'canvas': Browser không support multimedia phức tạp
 # - 'form', 'input': Không hỗ trợ POST (chỉ GET), bỏ để tránh confusion
-# - 'link', 'meta': Không cần metadata, chặn external CSS
+# - 'base': Không cần tag này, nguy hiểm cho URL resolution
+# NOTE: 'link' và 'meta' được pre-remove bằng regex TRƯỚC khi parse BeautifulSoup
+#       để tránh bug mis-nesting (BeautifulSoup coi content là children của <link>)
 # Tác động: Tags này + nội dung BỊ XÓA HOÀN TOÀN trước khi trả browser
 # Khác ALLOWED_TAGS: BLACKLISTED ưu tiên cao hơn, xóa content (không chỉ tag)
 
@@ -214,13 +250,17 @@ ALLOWED_CONTENT_TYPES: List[str] = [
     'image/jpeg',
     'image/png',
     'image/gif',
-    'image/bmp'
+    'image/bmp',
+    'image/svg+xml',  # SVG vector images (will be converted to BMP by proxy)
+    'image/webp'      # Modern WebP format (will be converted to BMP by proxy)
 ]
 # Whitelist MIME types cho phép proxy trả về.
 # - Filter theo header 'Content-Type' của upstream response
 # - KHÔNG trong list -> proxy trả lỗi 415 Unsupported Media Type
 # - 'text/html': Chính, browser cần
 # - 'image/*': Nếu ENABLE_IMAGE_PROXYING=True, proxy fetch images riêng
+#   + image/svg+xml: SVG (vector) - proxy convert to BMP via cairosvg
+#   + image/webp: Modern format - proxy convert to BMP via PIL
 # - Chặn: 'application/javascript', 'text/css', 'video/*', etc.
 # Tác động: Chống browser nhận junk data (PDFs, binaries) -> crash
 # Ví dụ: User browse PDF link -> proxy trả lỗi thay vì binary garbage
@@ -391,13 +431,14 @@ TEST_SITES: List[str] = [
 # Tác động: Dùng cho test_scripts/test_request.py, đảm bảo proxy hoạt động
 # Tránh: Sites phức tạp (Google, Facebook) - sẽ fail nhiều do sanitization
 
-MAX_CLIENTS: int = 10
+MAX_CLIENTS: int = 50
 # Giới hạn số clients đồng thời (concurrent connections).
-# - 10: Đủ cho testing với nhiều browser instances hoặc load tests nhẹ
+# - 50: Đủ cho Win98 browser với nhiều images trên 1 page (Wikipedia ~20 images)
+# - Browser tạo unlimited threads, mỗi image = 1 connection đồng thời
 # - Thấp hơn MAX_CONNECTIONS (socket backlog), đây là active processing limit
 # Tác động: Nếu vượt, connections mới phải chờ hoặc bị reject
 # Implementation: Threading/asyncio với semaphore(MAX_CLIENTS)
-# Khuyến nghị: 10 cho dự án học thuật, không cần scale cao
+# FIX: Tăng từ 10 → 50 để tránh "503 Service Unavailable" khi load Wikipedia
 
 
 # ============================================================================

@@ -1,0 +1,15 @@
+================================================================================
+[HEADER] 2025-11-12 01:54:15 - Win98 Retro Browser - Demo Launcher (PowerShell)
+================================================================================
+[HEADER] 2025-11-12 01:54:15 - Prerequisite Validation
+[SUCCESS] 2025-11-12 01:54:15 - Python detected: Python 3.13.2
+[INFO] 2025-11-12 01:54:15 - Validating Python packages...
+[SUCCESS] 2025-11-12 01:54:16 - Python dependencies satisfied
+[SUCCESS] 2025-11-12 01:54:16 - Proxy script found: C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\src\proxy\proxy.py
+[SUCCESS] 2025-11-12 01:54:16 - Browser executable found: C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\deploy\RetroBrowser.exe (798.5 KB)
+[ERROR] 2025-11-12 01:54:19 - Port 8080 already in use. Choose different port with -ProxyPort parameter
+[ERROR] 2025-11-12 01:54:20 - Prerequisite validation failed with 1 error(s)
+[HEADER] 2025-11-12 01:54:20 - Cleanup & Shutdown
+[INFO] 2025-11-12 01:54:20 - Session duration: 5s
+[SUCCESS] 2025-11-12 01:54:20 - Cleanup completed
+================================================================================

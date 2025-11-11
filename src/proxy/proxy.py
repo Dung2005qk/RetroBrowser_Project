@@ -208,6 +208,10 @@ class ProxyRequestHandler(socketserver.BaseRequestHandler):
             request_text = raw_request.decode('utf-8', errors='ignore')
             logger.debug(f"Raw client request:\n---\n{request_text.strip()}\n---")
             
+            # FIX: Log ALL request headers to diagnose navigation vs typed URL difference
+            headers_text = request_text.split('\r\n\r\n')[0]
+            logger.info(f"📩 CLIENT REQUEST HEADERS:\n{headers_text}")
+            
             request_line = request_text.split('\r\n')[0]
             method, path, _ = request_line.split(' ', 2)
 
@@ -320,7 +324,20 @@ class ProxyRequestHandler(socketserver.BaseRequestHandler):
             if DEBUG_MODE:
                 logger.debug(f"HTML before sanitization (first 250 chars):\n---\n{html_content[:250]}\n---")
 
-            soup = BeautifulSoup(html_content, 'html.parser')
+            # FIX: BeautifulSoup's html.parser has a critical bug where unclosed <link> tags
+            # cause all following content to be treated as children of <link>.
+            # When we decompose() blacklisted tags like 'link', it removes ALL article content!
+            # Solution: Pre-remove <link>, <meta>, <style> tags BEFORE parsing to avoid mis-nesting.
+            import re
+            html_content = re.sub(r'<link[^>]*>', '', html_content, flags=re.IGNORECASE)
+            html_content = re.sub(r'<meta[^>]*>', '', html_content, flags=re.IGNORECASE)
+            
+            # Use 'lxml' parser for better HTML5 support and proper tag nesting handling
+            # Fallback to 'html.parser' if lxml not available
+            try:
+                soup = BeautifulSoup(html_content, 'lxml')
+            except:
+                soup = BeautifulSoup(html_content, 'html.parser')
             
             # Pipeline Step 1: Remove comments
             if STRIP_HTML_COMMENTS:
@@ -359,12 +376,42 @@ class ProxyRequestHandler(socketserver.BaseRequestHandler):
                 if tag.name == 'img' and tag.has_attr('src'):
                     absolute_src = urljoin(base_url, tag['src'])
                     if ENABLE_IMAGE_PROXYING:
-                        # Rewrite image src to point back to our proxy
-                        tag['src'] = f"/image?url={quote(absolute_src)}"
+                        # Rewrite image src to absolute URL pointing to our proxy
+                        # CRITICAL: Must be absolute (http://...) not relative (/image?...)
+                        # because Win98 browser needs full URL for FetchUrl()
+                        tag['src'] = f"{PROXY_BASE_URL}/image?url={quote(absolute_src)}"
                     else:
                         tag['src'] = absolute_src
 
             sanitized_html = str(soup)
+            
+            # CRITICAL: Convert UTF-8 → ASCII for Win98 browser compatibility
+            # Win98 browser expects ANSI/Windows-1252, but we're sending UTF-8 string.
+            # Solution: Transliterate accented chars to ASCII equivalents
+            
+            # Step 1: Replace smart quotes and special punctuation
+            replacements = {
+                '\u2018': "'",   # LEFT SINGLE QUOTATION MARK
+                '\u2019': "'",   # RIGHT SINGLE QUOTATION MARK
+                '\u201C': '"',   # LEFT DOUBLE QUOTATION MARK
+                '\u201D': '"',   # RIGHT DOUBLE QUOTATION MARK
+                '\u2013': '-',   # EN DASH
+                '\u2014': '--',  # EM DASH
+                '\u2026': '...', # HORIZONTAL ELLIPSIS
+                '\u00A0': ' ',   # NON-BREAKING SPACE
+            }
+            for utf8_char, ascii_char in replacements.items():
+                sanitized_html = sanitized_html.replace(utf8_char, ascii_char)
+            
+            # Step 2: Transliterate accented characters (é→e, ñ→n, etc.)
+            # Use 'ascii' encoding with 'ignore' to strip accents safely
+            try:
+                # Encode as ASCII, replacing unmappable chars with closest equivalents
+                import unicodedata
+                sanitized_html = unicodedata.normalize('NFKD', sanitized_html)
+                sanitized_html = sanitized_html.encode('ascii', 'ignore').decode('ascii')
+            except Exception as e:
+                logger.warning(f"Unicode normalization failed: {e}, using original text")
             
             if DEBUG_MODE:
                 logger.debug(f"HTML after sanitization (first 250 chars):\n---\n{sanitized_html[:250]}\n---")
@@ -409,17 +456,89 @@ class ProxyRequestHandler(socketserver.BaseRequestHandler):
 </html>"""
 
     def _handle_image_proxy_request(self, path: str) -> None:
-        """Fetches an image and returns its raw binary content."""
+        """Fetches an image and converts it to BMP for Win98 browser compatibility."""
         try:
             query = urlparse(path).query
             image_url = parse_qs(query)['url'][0]
+            
+            # FIX: Prevent infinite loop - if image_url points back to proxy, reject it
+            if '127.0.0.1:8080' in image_url or 'localhost:8080' in image_url:
+                logger.error(f"Detected nested proxy URL (infinite loop prevention): {image_url}")
+                self._send_http_response(400, "Bad Request", 
+                    b"<html><body><h1>400 Bad Request</h1><p>Nested proxy URLs not allowed</p></body></html>",
+                    "text/html; charset=utf-8")
+                return
+            
             logger.info(f"Proxying image request for: {image_url}")
 
             # Fetch the image using the same robust method
             response = self._fetch_upstream(image_url)
             if response:
-                content_type = response.headers.get('Content-Type', 'application/octet-stream')
-                self._send_http_response(200, "OK", response.content, content_type)
+                # CRITICAL: Win98 browser only supports BMP natively via LoadImageA()
+                # Convert all image formats (GIF, JPEG, PNG, WebP, SVG, etc.) to BMP
+                try:
+                    from PIL import Image
+                    import io
+                    
+                    content_type = response.headers.get('Content-Type', '').lower()
+                    
+                    # FIX: If already BMP (from nested request), just pass through
+                    if 'bmp' in content_type or response.content[:2] == b'BM':
+                        logger.info(f"Image already in BMP format, passing through: {image_url}")
+                        self._send_http_response(200, "OK", response.content, "image/bmp")
+                        return
+                    
+                    # Special handling for SVG (vector format, PIL can't decode)
+                    # Only treat as SVG if Content-Type says so AND not already converted
+                    if 'svg' in content_type or (image_url.lower().endswith('.svg') and 'bmp' not in content_type):
+                        logger.info(f"Detected SVG image, converting with cairosvg: {image_url}")
+                        try:
+                            import cairosvg
+                            # Convert SVG to PNG first (cairosvg can't output BMP directly)
+                            png_data = cairosvg.svg2png(bytestring=response.content)
+                            # Then load PNG with PIL and convert to BMP
+                            img = Image.open(io.BytesIO(png_data))
+                        except ImportError:
+                            logger.error("cairosvg not installed, cannot convert SVG. Install with: pip install cairosvg")
+                            self._send_error_response(415, "Unsupported Media Type", 
+                                                    f"SVG images require cairosvg library")
+                            return
+                        except Exception as svg_error:
+                            logger.error(f"Failed to convert SVG: {svg_error}", exc_info=True)
+                            self._send_error_response(415, "Unsupported Media Type", 
+                                                    f"Failed to convert SVG: {str(svg_error)}")
+                            return
+                    else:
+                        # Load raster image formats (GIF, JPEG, PNG, WebP, etc.)
+                        img = Image.open(io.BytesIO(response.content))
+                    
+                    # Convert to RGB if needed (BMP doesn't support transparency well)
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        # Create white background for transparent images
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        if img.mode in ('RGBA', 'LA'):
+                            background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+                            img = background
+                        else:
+                            img = img.convert('RGB')
+                    elif img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    
+                    # Save as BMP to bytes buffer
+                    bmp_buffer = io.BytesIO()
+                    img.save(bmp_buffer, format='BMP')
+                    bmp_data = bmp_buffer.getvalue()
+                    
+                    logger.info(f"Converted {image_url} to BMP ({len(response.content)} → {len(bmp_data)} bytes)")
+                    self._send_http_response(200, "OK", bmp_data, "image/bmp")
+                    
+                except Exception as img_error:
+                    logger.error(f"Failed to convert image to BMP: {img_error}", exc_info=True)
+                    # Fallback: send original image (browser may not support it)
+                    content_type = response.headers.get('Content-Type', 'application/octet-stream')
+                    self._send_http_response(200, "OK", response.content, content_type)
 
         except (KeyError, IndexError):
             self._send_error_response(400, "Bad Request", "Missing 'url' parameter for image proxy.")

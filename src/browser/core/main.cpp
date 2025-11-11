@@ -105,6 +105,15 @@ static DWORD WINAPI ImageLoadThreadProc(LPVOID lpParam)
                     hBitmap = (HBITMAP)LoadImageA(NULL, tempFile, IMAGE_BITMAP,
                                                    0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
                     
+                    // DEBUG: Log if LoadImage failed
+                    if (!hBitmap) {
+                        DWORD dwError = GetLastError();
+                        char szDebug[512];
+                        wsprintfA(szDebug, "LoadImageA failed for %s (size=%d bytes, error=%d)\n", 
+                                 tempFile, (int)resp.body.size(), dwError);
+                        OutputDebugStringA(szDebug);
+                    }
+                    
                     // Clean up temp file
                     DeleteFileA(tempFile);
                 }
@@ -270,6 +279,24 @@ static std::string ResolveURL(const std::string& base, const std::string& href)
         return base + href;
     }
     
+    // Absolute path (starts with /): use base domain only
+    if (!href.empty() && href[0] == '/') {
+        // Extract protocol + domain from base
+        size_t protocolEnd = base.find("://");
+        if (protocolEnd != std::string::npos) {
+            size_t domainEnd = base.find('/', protocolEnd + 3);
+            if (domainEnd != std::string::npos) {
+                // Base has path: extract domain only
+                return base.substr(0, domainEnd) + href;
+            } else {
+                // Base is just domain: append path
+                return base + href;
+            }
+        }
+        // Fallback: shouldn't happen with valid base
+        return base + href;
+    }
+    
     // Relative path: extract base domain + path
     std::string resolved = base;
     
@@ -371,7 +398,14 @@ void OnNavigate(const TCHAR* pszUrl)
     
     // --- Parse HTML (BLOCKING CALL) ---
     UI_SetStatusText(_T("Parsing HTML..."));
+    
+    // DEBUG: Log HTML size received from proxy
+    DEBUG_LOGF("Received HTML from proxy: %d bytes", resp.body.size());
+    
     parseResult = g_parser.Parse(resp.body);
+    
+    // DEBUG: Log parse results
+    DEBUG_LOGF("Parse status: %d, Blocks parsed: %d", parseResult.status, parseResult.blocks.size());
     
     // --- Handle Parse Errors ---
     if (parseResult.status != Parser::PARSE_SUCCESS) {
@@ -383,11 +417,11 @@ void OnNavigate(const TCHAR* pszUrl)
     
     // --- Success Path: Display Page ---
     {
-        // Transfer ownership: heap-allocate blocks, UI will free
-        // Why: UI module owns displayed data for lifetime of page
-        // Note: ParsedPageData defined as opaque pointer in ui.h for type safety
-        std::vector<Parser::HtmlBlock>* pPageData = 
-            new std::vector<Parser::HtmlBlock>(parseResult.blocks);
+        // Transfer ownership: heap-allocate ParseResult, UI will free
+        // CRITICAL: Must allocate ParseResult* (not vector*) because UI_OnPageLoaded
+        // expects ParsedPageData* which is typedef of ParseResult*
+        // Previous bug: Allocated vector*, cast to ParseResult* -> type mismatch crash!
+        Parser::ParseResult* pPageData = new Parser::ParseResult(parseResult);
         
         // Cast to opaque ParsedPageData* (cleaner than C-style cast in API design)
         UI_OnPageLoaded(reinterpret_cast<const ParsedPageData*>(pPageData));

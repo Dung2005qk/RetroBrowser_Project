@@ -41,6 +41,18 @@ namespace Parser
         ParseResult& result) const
     {
         BlockType type = GetBlockType(tagName);
+        
+        // FIXED: Do NOT skip DIV/SPAN here!
+        // These are structural wrappers - we should NOT create blocks for them,
+        // but we MUST continue parsing their content (nested <p>, <h1>, etc.)
+        // The FSM will handle them by not treating them as containers.
+        // This function is called for SELF-CLOSING or NON-CONTAINER tags only.
+        if (type == BLOCK_DIV || type == BLOCK_SPAN)
+        {
+            // Don't create block, but don't return - let FSM continue parsing content
+            return;
+        }
+        
         if (type != BLOCK_UNKNOWN)
         {
             HtmlBlock block(type);
@@ -139,6 +151,11 @@ namespace Parser
         std::string skipTagName;          // Tag we're skipping (e.g., "script")
         int skipDepth = 0;                // Nesting depth for skip
 
+        // Container tracking (for text extraction from <h1>, <p>, <li>, etc.)
+        BlockType containerType = BLOCK_UNKNOWN;     // Current container tag type
+        std::string containerContent;                // Text content inside container
+        std::map<std::string, std::string> containerAttrs; // Container attributes
+
         // Flags
         bool isClosingTag = false;        // Processing </tag>
         bool isSelfClosing = false;       // Processing <tag />
@@ -173,8 +190,19 @@ namespace Parser
                             std::string cleaned = TrimAndDecode(textBuffer, result.warnings);
                             if (!cleaned.empty())
                             {
-                                HtmlBlock block(BLOCK_TEXT, cleaned);
-                                result.blocks.push_back(block);
+                                // If we're inside a container, add to container content
+                                if (containerType != BLOCK_UNKNOWN)
+                                {
+                                    if (!containerContent.empty())
+                                        containerContent += " ";
+                                    containerContent += cleaned;
+                                }
+                                else
+                                {
+                                    // Standalone text - create TEXT block
+                                    HtmlBlock block(BLOCK_TEXT, cleaned);
+                                    result.blocks.push_back(block);
+                                }
                             }
                             textBuffer.clear();
                         }
@@ -265,7 +293,23 @@ namespace Parser
                         // Tag complete without attributes
                         if (isClosingTag)
                         {
-                            // Closing tag - just skip
+                            // Closing tag - finalize container if we're in one
+                            if (containerType != BLOCK_UNKNOWN)
+                            {
+                                BlockType closeType = GetBlockType(tagName);
+                                if (closeType == containerType)
+                                {
+                                    // Matching closing tag - finalize container block
+                                    HtmlBlock block(containerType, containerContent);
+                                    block.attributes = containerAttrs;
+                                    result.blocks.push_back(block);
+                                    
+                                    // Reset container state
+                                    containerType = BLOCK_UNKNOWN;
+                                    containerContent.clear();
+                                    containerAttrs.clear();
+                                }
+                            }
                             isClosingTag = false;
                             tagName.clear();
                             currentState = STATE_DATA;
@@ -282,8 +326,74 @@ namespace Parser
                                 break;
                             }
 
-                            // Create and add block using helper (DRY principle)
-                            FinalizeAndAddBlock(tagName, attributes, result);
+                            // Check if this is a container tag (needs text content)
+                            BlockType type = GetBlockType(tagName);
+                            bool isContainer = (type == BLOCK_H1 || type == BLOCK_H2 || 
+                                              type == BLOCK_H3 || type == BLOCK_P || 
+                                              type == BLOCK_A || type == BLOCK_LI);
+                            
+                            if (isContainer && containerType == BLOCK_UNKNOWN)
+                            {
+                                // Start container - wait for text content and closing tag
+                                containerType = type;
+                                containerContent.clear();
+                                containerAttrs = attributes;
+                            }
+                            else if (isContainer && containerType != BLOCK_UNKNOWN)
+                            {
+                                // Nested container (e.g. <a> inside <li>)
+                                // Special case: <li><a> should merge - use <li> as container but keep <a> attributes
+                                if (containerType == BLOCK_LI && type == BLOCK_A)
+                                {
+                                    // Merge: keep LI as container type but use A's href attribute
+                                    // This allows "• <link>" rendering
+                                    if (!attributes.empty())
+                                    {
+                                        // Copy href from <a> to container attrs
+                                        auto it = attributes.find("href");
+                                        if (it != attributes.end())
+                                        {
+                                            containerAttrs["href"] = it->second;
+                                        }
+                                    }
+                                    // Continue accumulating text into LI container
+                                    // Don't create new container or finalize
+                                }
+                                else
+                                {
+                                    // Other nested cases: finalize outer, start new
+                                    HtmlBlock block(containerType, containerContent);
+                                    block.attributes = containerAttrs;
+                                    result.blocks.push_back(block);
+                                    
+                                    // Start new container
+                                    containerType = type;
+                                    containerContent.clear();
+                                    containerAttrs = attributes;
+                                }
+                            }
+                            else if (type == BLOCK_BR)
+                            {
+                                // Self-contained tags (no content needed)
+                                FinalizeAndAddBlock(tagName, attributes, result);
+                            }
+                            else if (type == BLOCK_UL)
+                            {
+                                // UL is just a marker, don't create block
+                                // Just skip it silently
+                            }
+                            else if (type == BLOCK_DIV || type == BLOCK_SPAN)
+                            {
+                                // CRITICAL FIX: Structural wrappers - don't create blocks
+                                // but DO continue parsing their content (nested tags)
+                                // Just silently ignore the wrapper tags themselves
+                            }
+                            else if (type != BLOCK_UNKNOWN)
+                            {
+                                // Other recognized tags - use old behavior
+                                FinalizeAndAddBlock(tagName, attributes, result);
+                            }
+                            
                             tagName.clear();
                             attributes.clear();
                             currentState = STATE_DATA;
@@ -309,8 +419,61 @@ namespace Parser
                 {
                     if (c == '>')
                     {
-                        // Tag complete - create and add block using helper (DRY principle)
-                        FinalizeAndAddBlock(tagName, attributes, result);
+                        // Tag complete - check if container or immediate block
+                        BlockType type = GetBlockType(tagName);
+                        bool isContainer = (type == BLOCK_H1 || type == BLOCK_H2 || 
+                                          type == BLOCK_H3 || type == BLOCK_P || 
+                                          type == BLOCK_A || type == BLOCK_LI);
+                        
+                        if (isContainer && containerType == BLOCK_UNKNOWN)
+                        {
+                            // Start container - wait for text content and closing tag
+                            containerType = type;
+                            containerContent.clear();
+                            containerAttrs = attributes;
+                        }
+                        else if (isContainer && containerType != BLOCK_UNKNOWN)
+                        {
+                            // Nested container with attributes (e.g. <a href="..."> inside <li>)
+                            if (containerType == BLOCK_LI && type == BLOCK_A)
+                            {
+                                // Merge: keep LI as container type but copy href from <a>
+                                auto it = attributes.find("href");
+                                if (it != attributes.end())
+                                {
+                                    containerAttrs["href"] = it->second;
+                                }
+                                // Continue accumulating text into LI container
+                            }
+                            else
+                            {
+                                // Other nested cases: finalize outer, start new
+                                HtmlBlock block(containerType, containerContent);
+                                block.attributes = containerAttrs;
+                                result.blocks.push_back(block);
+                                
+                                containerType = type;
+                                containerContent.clear();
+                                containerAttrs = attributes;
+                            }
+                        }
+                        else if (type == BLOCK_BR || type == BLOCK_UL || type == BLOCK_IMG)
+                        {
+                            // Self-contained tags (no content needed)
+                            FinalizeAndAddBlock(tagName, attributes, result);
+                        }
+                        else if (type == BLOCK_DIV || type == BLOCK_SPAN)
+                        {
+                            // CRITICAL FIX: Structural wrappers - don't create blocks
+                            // but DO continue parsing their content (nested tags)
+                            // Just silently ignore the wrapper tags themselves
+                        }
+                        else if (type != BLOCK_UNKNOWN)
+                        {
+                            // Other recognized tags
+                            FinalizeAndAddBlock(tagName, attributes, result);
+                        }
+                        
                         tagName.clear();
                         attributes.clear();
                         currentState = STATE_DATA;
@@ -598,15 +761,40 @@ namespace Parser
                 if (tagName == "h1") return BLOCK_H1;
                 if (tagName == "h2") return BLOCK_H2;
                 if (tagName == "h3") return BLOCK_H3;
+                if (tagName == "header") return BLOCK_DIV; // Semantic HTML5
                 break;
             case 'a':
                 if (tagName == "a") return BLOCK_A;
+                if (tagName == "article") return BLOCK_DIV; // Semantic HTML5
+                if (tagName == "aside") return BLOCK_DIV;   // Semantic HTML5
                 break;
             case 'i':
                 if (tagName == "img") return BLOCK_IMG;
                 break;
             case 'b':
                 if (tagName == "br") return BLOCK_BR;
+                break;
+            case 'u':
+                if (tagName == "ul") return BLOCK_UL;
+                break;
+            case 'l':
+                if (tagName == "li") return BLOCK_LI;
+                break;
+            case 'd':
+                if (tagName == "div") return BLOCK_DIV;
+                break;
+            case 's':
+                if (tagName == "section") return BLOCK_DIV; // Semantic HTML5
+                if (tagName == "span") return BLOCK_SPAN;
+                break;
+            case 'f':
+                if (tagName == "footer") return BLOCK_DIV; // Semantic HTML5
+                break;
+            case 'n':
+                if (tagName == "nav") return BLOCK_DIV;    // Semantic HTML5
+                break;
+            case 'm':
+                if (tagName == "main") return BLOCK_DIV;   // Semantic HTML5
                 break;
         }
 

@@ -1,0 +1,17 @@
+2025-11-12 01:55:11,415 - [INFO] - proxy - ============================================================
+2025-11-12 01:55:11,418 - [INFO] - proxy -   Win98 Retro Browser - Intelligent Proxy Starting Up
+2025-11-12 01:55:11,421 - [INFO] - proxy - ============================================================
+2025-11-12 01:55:11,424 - [INFO] - proxy - Mode: DEVELOPMENT
+2025-11-12 01:55:11,429 - [INFO] - proxy - Listening on: 0.0.0.0:8080
+2025-11-12 01:55:11,431 - [INFO] - proxy - Log Level: DEBUG
+2025-11-12 01:55:11,434 - [INFO] - proxy - User-Agent: Mozilla/4.0 (compatible; MSIE 5.0; Windows 98)
+2025-11-12 01:55:11,434 - [INFO] - proxy - Max Concurrent Clients: 50
+2025-11-12 01:55:11,435 - [INFO] - proxy - Request Timeout: 30.0s
+2025-11-12 01:55:11,435 - [INFO] - proxy - Content Filtering: ENABLED
+2025-11-12 01:55:11,435 - [INFO] - proxy - Simple Caching: DISABLED
+2025-11-12 01:55:11,436 - [INFO] - proxy - Image Proxying: ENABLED
+2025-11-12 01:55:11,436 - [INFO] - proxy - SSL Verification: ENABLED
+2025-11-12 01:55:11,436 - [INFO] - proxy - Domain Blacklist: 7 domain(s)
+2025-11-12 01:55:11,436 - [INFO] - proxy - ============================================================
+2025-11-12 01:55:11,437 - [INFO] - proxy - Press Ctrl+C to stop the proxy.
+2025-11-12 01:55:13,319 - [WARNING] - proxy - Connection closed by client before full request was sent.

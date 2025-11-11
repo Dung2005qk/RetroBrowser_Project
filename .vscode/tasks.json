@@ -7,7 +7,7 @@
             "command": "cmd.exe",
             "args": [
                 "/c",
-                "call \"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x86 >nul && cl.exe /nologo /Fe:deploy/RetroBrowser.exe /Fo:obj/ /EHsc /MT /Zi /Od /W3 /D WIN32 /D _WINDOWS /D _MBCS /D WINVER=0x0410 /D _WIN32_WINNT=0x0410 /D _WIN32_WINDOWS=0x0410 /D _WIN32_IE=0x0500 /I src/browser /I src/browser/core /I libs/libjpeg/include src/browser/core/stdafx.cpp src/browser/core/main.cpp src/browser/ui/ui.cpp src/browser/renderer/renderer.cpp src/browser/parser/parser.cpp src/browser/network/network.cpp /link /SUBSYSTEM:WINDOWS /MACHINE:X86 /DEBUG /PDB:deploy/RetroBrowser.pdb /INCREMENTAL:NO kernel32.lib user32.lib gdi32.lib comctl32.lib shell32.lib ws2_32.lib advapi32.lib comdlg32.lib libs/libjpeg/lib/jpeg.lib"
+            "\"call \"C:\\Program Files (x86)\\Microsoft Visual Studio\\VC98\\Bin\\vcvars32.bat\" && cl.exe /nologo /Fe:deploy/RetroBrowser.exe /Fo:obj/ /EHsc /MT /Zi /Od /W3 /D WIN32 /D _WINDOWS /D _MBCS /D WINVER=0x0410 /D _WIN32_WINNT=0x0410 /D _WIN32_WINDOWS=0x0410 /D _WIN32_IE=0x0500 /I src/browser /I src/browser/core /I libs/libjpeg/include src/browser/core/stdafx.cpp src/browser/core/main.cpp src/browser/ui/ui.cpp src/browser/renderer/renderer.cpp src/browser/parser/parser.cpp src/browser/network/network.cpp /link /SUBSYSTEM:WINDOWS /MACHINE:X86 /DEBUG /PDB:deploy/RetroBrowser.pdb /INCREMENTAL:NO kernel32.lib user32.lib gdi32.lib comctl32.lib shell32.lib ws2_32.lib advapi32.lib comdlg32.lib libs/libjpeg/lib/jpeg.lib\""
             ],
             "group": {
                 "kind": "build",
