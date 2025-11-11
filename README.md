@@ -342,8 +342,7 @@ RetroBrowser_Project/
 │
 ├── 📁 tools/                   # Development tools
 │   └── 📁 test_scripts/        # Comprehensive test suite
-│       ├── test_comprehensive.py  # 24 tests (1,400+ lines)
-│       └── README.md           # Quick reference
+│       └── test_comprehensive.py  # 24 tests (1,400+ lines)
 │
 ├── 📁 deploy/                  # Build output
 │   ├── RetroBrowser.exe        # Compiled binary
@@ -614,7 +613,7 @@ python tools/test_scripts/test_comprehensive.py
 
 ### Known Limitations
 
-1. **Image Format**: Only BMP,JPEG/PNG supported (Win98 native)
+1. **Image Format**: Only BMP, JPEG/PNG supported (Win98 native)
 2. **CSS/JavaScript**: Not supported (by design)
 3. **POST Requests**: Only GET implemented
 4. **HTTPS Direct**: Proxy handles TLS
