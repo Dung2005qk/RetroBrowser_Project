@@ -11,15 +11,15 @@
 #include "ui.h"                   // Our public API contract.
 #include "../renderer/renderer.h" // For painting delegation and hit-testing.
 #include "../parser/parser.h"     // For ParseResult structure.
+#include <commctrl.h>
 
-// Type alias: ParsedPageData is ParseResult from Parser namespace
-// This resolves the forward declaration in ui.h with actual implementation  
-typedef Parser::ParseResult ParsedPageData;
+#pragma comment(lib, "comctl32.lib")
 
 // --- Constants ---
-#define IDC_ADDRESS_BAR      101
-#define IDC_GO_BUTTON        102
-#define IDC_STATUS_BAR       103
+// Use control IDs from resource.h (already included via stdafx.h)
+#define IDC_ADDRESS_BAR      IDC_ADDRESS_EDIT    // 400
+#define IDC_STATUS_BAR       IDC_STATUS_STATIC   // 402
+// IDC_GO_BUTTON already defined in resource.h as 401
 #define UI_PADDING           5
 #define ADDRESS_BAR_HEIGHT   24
 #define GO_BUTTON_WIDTH      60
@@ -51,7 +51,8 @@ static void RepositionControls(HWND hParent);
 static void HandleNavigate(HWND hWnd);
 static RECT GetRenderAreaRect(void);
 static void ExtractAndSetPageTitle(const ParsedPageData* pData);
-static LRESULT CALLBACK AddressSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+static LRESULT CALLBACK AddressSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+static WNDPROC g_pfnOldAddressProc = NULL;
 
 // ============================================================================
 // SECTION 1: PUBLIC API IMPLEMENTATION
@@ -231,8 +232,8 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             
             CreateControls(hWnd); // Create address bar, button, status bar.
             
-            // Subclass address bar for Enter key handling using modern safe API
-            SetWindowSubclass(g_State.hAddressBar, AddressSubclassProc, 0, 0);
+            // Subclass address bar for Enter key handling
+            g_pfnOldAddressProc = (WNDPROC)SetWindowLong(g_State.hAddressBar, GWL_WNDPROC, (LONG)AddressSubclassProc);
             
             SetFocus(g_State.hAddressBar); // Initial focus for immediate typing.
             
@@ -484,6 +485,30 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             return 0;
         }
 
+        case UIM_IMAGE_LOADED: {
+            // Image loaded from worker thread: wParam = HBITMAP, lParam = char* URL
+            HBITMAP hBitmap = (HBITMAP)wParam;
+            char* pszImageUrl = (char*)lParam;
+            
+            if (hBitmap && pszImageUrl && g_State.pRenderer) {
+                // Convert char* URL to std::string for renderer
+                std::string imageUrl(pszImageUrl);
+                
+                // Cache the loaded image in renderer
+                g_State.pRenderer->NotifyImageLoaded(imageUrl, hBitmap);
+                
+                // Trigger repaint to display the newly loaded image
+                UI_InvalidateRender();
+            }
+            
+            // Free the heap-allocated URL string from worker thread
+            if (pszImageUrl) {
+                free(pszImageUrl);
+            }
+            
+            return 0;
+        }
+
         case WM_CLOSE: {
             // Notify core to begin cleanup before destroying the window.
             if (g_State.pCallbacks && g_State.pCallbacks->pfnOnClose) {
@@ -494,9 +519,9 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         }
         
         case WM_DESTROY: {
-            // Clean up subclass before window destruction to prevent memory access violations
-            if (g_State.hAddressBar) {
-                RemoveWindowSubclass(g_State.hAddressBar, AddressSubclassProc, 0);
+            // Restore original window procedure
+            if (g_State.hAddressBar && g_pfnOldAddressProc) {
+                SetWindowLong(g_State.hAddressBar, GWL_WNDPROC, (LONG)g_pfnOldAddressProc);
             }
             
             // Post the quit message to terminate the message loop.
@@ -618,7 +643,7 @@ static void ExtractAndSetPageTitle(const ParsedPageData* pData) {
     UI_SetWindowTitle(NULL);
 }
 
-static LRESULT CALLBACK AddressSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+static LRESULT CALLBACK AddressSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     // Handle Enter key press in the address bar to trigger navigation.
     if (uMsg == WM_KEYDOWN && wParam == VK_RETURN) {
         HandleNavigate(GetParent(hWnd)); // Navigate using main window's context.
@@ -630,6 +655,6 @@ static LRESULT CALLBACK AddressSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         PostMessage(hWnd, EM_SETSEL, 0, -1);
     }
     
-    // Use modern safe subclassing API - automatically handles the chain
-    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+    // Call original window procedure
+    return CallWindowProc(g_pfnOldAddressProc, hWnd, uMsg, wParam, lParam);
 }

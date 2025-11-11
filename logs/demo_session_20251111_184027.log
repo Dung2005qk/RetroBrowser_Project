@@ -1,0 +1,16 @@
+[SUCCESS] 2025-11-11 18:40:30 - Created log directory: C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\logs
+[SUCCESS] 2025-11-11 18:40:30 - All prerequisites satisfied
+================================================================================
+[HEADER] 2025-11-11 18:40:30 - Starting Python Proxy Server
+[INFO] 2025-11-11 18:40:30 - Launching proxy on 0.0.0.0:8080
+[ERROR] 2025-11-11 18:40:31 - Unexpected error: The property 'OutputDataReceived' cannot be found on this object. Verify that the property exists.
+[ERROR] 2025-11-11 18:40:31 - at Start-ProxyServer, C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\tools\run_demo.ps1: line 155
+at Main, C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\tools\run_demo.ps1: line 283
+at <ScriptBlock>, C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project\tools\run_demo.ps1: line 314
+at <ScriptBlock>, <No file>: line 1
+[HEADER] 2025-11-11 18:40:31 - Cleanup & Shutdown
+[INFO] 2025-11-11 18:40:31 - Stopping proxy (PID: )...
+[WARN] 2025-11-11 18:40:31 - Failed to stop proxy gracefully: Exception calling "Kill" with "0" argument(s): "No process is associated with this object."
+[INFO] 2025-11-11 18:40:31 - Session duration: 5s
+[SUCCESS] 2025-11-11 18:40:31 - Cleanup completed
+================================================================================

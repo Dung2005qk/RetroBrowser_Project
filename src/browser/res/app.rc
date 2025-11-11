@@ -59,7 +59,6 @@ BEGIN
     VK_F5,          IDM_VIEW_REFRESH,   VIRTKEY           // F5: Refresh
     "Q",            IDM_FILE_EXIT,      VIRTKEY, CONTROL  // Ctrl+Q: Exit
     "L",            IDM_FOCUS_ADDRESS,  VIRTKEY, CONTROL  // Ctrl+L: Focus address bar
-    // Lưu ý: Cần thêm IDM_FOCUS_ADDRESS vào resource.h
 END
 
 // ============================================================================

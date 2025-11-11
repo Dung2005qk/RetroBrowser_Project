@@ -1,0 +1,125 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build RetroBrowser",
+            "type": "shell",
+            "command": "cmd.exe",
+            "args": [
+                "/c",
+                "call \"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x86 >nul && cl.exe /nologo /Fe:deploy/RetroBrowser.exe /Fo:obj/ /EHsc /MT /Zi /Od /W3 /D WIN32 /D _WINDOWS /D _MBCS /D WINVER=0x0410 /D _WIN32_WINNT=0x0410 /D _WIN32_WINDOWS=0x0410 /D _WIN32_IE=0x0500 /I src/browser /I src/browser/core /I libs/libjpeg/include src/browser/core/stdafx.cpp src/browser/core/main.cpp src/browser/ui/ui.cpp src/browser/renderer/renderer.cpp src/browser/parser/parser.cpp src/browser/network/network.cpp /link /SUBSYSTEM:WINDOWS /MACHINE:X86 /DEBUG /PDB:deploy/RetroBrowser.pdb /INCREMENTAL:NO kernel32.lib user32.lib gdi32.lib comctl32.lib shell32.lib ws2_32.lib advapi32.lib comdlg32.lib libs/libjpeg/lib/jpeg.lib"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true,
+                "echo": true,
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Run Python Proxy",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "src/proxy/proxy.py"
+            ],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": false,
+                "echo": true,
+                "showReuseMessage": false
+            },
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^.*$",
+                    "file": 1,
+                    "location": 2,
+                    "message": 3
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*Starting proxy.*$",
+                    "endsPattern": "^.*Proxy server listening.*$"
+                }
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Clean Build Artifacts",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "Remove-Item -Path obj/* -Force -ErrorAction SilentlyContinue; Remove-Item -Path deploy/*.exe,deploy/*.pdb,deploy/*.ilk -Force -ErrorAction SilentlyContinue; Write-Host 'Build artifacts cleaned successfully' -ForegroundColor Green"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": false,
+                "echo": true,
+                "showReuseMessage": false
+            },
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Build and Run",
+            "dependsOn": [
+                "Build RetroBrowser",
+                "Run Python Proxy"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "label": "Full Rebuild",
+            "dependsOn": [
+                "Clean Build Artifacts",
+                "Build RetroBrowser"
+            ],
+            "dependsOrder": "sequence",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Deploy to Win98 (Manual)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "Write-Host '======================================' -ForegroundColor Cyan; Write-Host 'DEPLOYMENT INSTRUCTIONS FOR WIN98' -ForegroundColor Yellow; Write-Host '======================================' -ForegroundColor Cyan; Write-Host ''; Write-Host '1. Copy deploy/RetroBrowser.exe to Win98 machine' -ForegroundColor White; Write-Host '2. Ensure Win98 has network connectivity to proxy server' -ForegroundColor White; Write-Host '3. Configure proxy host IP in Win98 (default: 127.0.0.1:8080)' -ForegroundColor White; Write-Host '4. Run RetroBrowser.exe on Win98' -ForegroundColor White; Write-Host ''; Write-Host 'Current build location:' -ForegroundColor Green; Write-Host '  ${workspaceFolder}/deploy/RetroBrowser.exe' -ForegroundColor Cyan; Write-Host ''; Write-Host 'NOTE: This is a STATIC binary with /MT flag.' -ForegroundColor Magenta; Write-Host '      No external DLL dependencies required!' -ForegroundColor Magenta; Write-Host ''"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true,
+                "echo": false
+            },
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        }
+    ]
+}

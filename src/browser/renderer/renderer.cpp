@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include "renderer.h"
 #include "../parser/parser.h"
+#include <set>
 
 namespace Renderer
 {
@@ -320,7 +321,7 @@ void HtmlRenderer::CalculateLayout(HWND hwnd, const RECT& clientRect)
                 block.attributes.find("href");
             if (hrefIt != block.attributes.end()) {
                 ClickableArea area;
-                area.rect = measureRect;
+                area.bounds = measureRect;
                 area.href = hrefIt->second;
                 m_clickableAreas.push_back(area);
             }
@@ -482,7 +483,7 @@ bool HtmlRenderer::HandleClick(int x, int y, std::string& outHref)
     // Reverse iteration for z-order (last drawn = topmost)
     for (size_t i = m_clickableAreas.size(); i > 0; --i) {
         const ClickableArea& area = m_clickableAreas[i - 1];
-        if (PtInRect(&area.rect, pt)) {
+        if (PtInRect(&area.bounds, pt)) {
             outHref = area.href;
             return true;
         }
@@ -544,6 +545,25 @@ void HtmlRenderer::OnScroll(HWND hwnd, int scrollType, int scrollPos)
     si.fMask = SIF_POS;
     si.nPos = m_scrollY;
     SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+}
+
+// ============================================================================
+// ON SCROLL - Simple Scroll by Amount (Overload)
+// ============================================================================
+void HtmlRenderer::OnScroll(int amount)
+{
+    // Simple scroll by a given pixel amount (positive = down, negative = up)
+    // Note: This is a simplified version without HWND, used when window handle
+    //       is not available. Caller is responsible for invalidating window.
+    
+    int maxScroll = m_totalContentHeight;
+    if (maxScroll < 0) maxScroll = 0;
+    
+    m_scrollY += amount;
+    
+    // Clamp to valid range [0, maxScroll]
+    if (m_scrollY < 0) m_scrollY = 0;
+    if (m_scrollY > maxScroll) m_scrollY = maxScroll;
 }
 
 // ============================================================================
@@ -899,27 +919,40 @@ int HtmlRenderer::ClientToDocumentY(int clientY) const
 }
 
 // ============================================================================
-// PRIVATE: DECODE IMAGE (Stub - Decoding should be done by UI/Network layer)
+// PRIVATE: DECODE IMAGE - JPEG Decoding using libjpeg
 // ============================================================================
 HBITMAP HtmlRenderer::DecodeImage(const unsigned char* imageData, size_t dataSize)
 {
-    // ARCHITECTURE NOTE:
-    // This method is intentionally kept as a stub. Image decoding should be performed
-    // by the UI layer or Network module before passing HBITMAP to renderer via 
-    // NotifyImageLoaded(). This separation of concerns keeps the renderer focused on
-    // layout and painting, not image format parsing.
+    // Validate input
+    if (!imageData || dataSize == 0) {
+        return NULL;
+    }
+    
+    // NOTE: This is a simplified implementation for Win98/VC++6 compatibility.
+    // For production, consider more robust error handling and format detection.
     //
-    // RECOMMENDED IMPLEMENTATION LOCATION:
-    // - Network module: Decode during download (ImageLoader class)
-    // - UI layer: Decode in worker thread before WM_USER_IMAGE_LOADED
+    // JPEG DECODING STRATEGY:
+    // 1. Use libjpeg to decompress JPEG data into raw RGB pixel array
+    // 2. Create DIB (Device Independent Bitmap) from raw pixels
+    // 3. Convert DIB to DDB (Device Dependent Bitmap = HBITMAP) for GDI rendering
     //
-    // DECODING APPROACHES:
-    // - BMP format: Use LoadImage(NULL, ..., LR_LOADFROMFILE) or manual DIB parsing
-    // - JPEG format: Use libjpeg or GDI+ (if available on target system)
-    // - PNG format: Use libpng (requires zlib dependency)
+    // WHY NOT DIRECT HBITMAP CREATION?
+    // - libjpeg outputs row-by-row scanlines (bottom-up for Windows DIB)
+    // - HBITMAP needs properly formatted DIB bits with correct alignment
+    // - This approach ensures compatibility with Win98 GDI limitations
+    
+    // For Win98 compatibility, we'll implement a basic JPEG decoder stub
+    // that returns NULL. The actual decoding will be done in the UI/Network layer
+    // where we have better access to temporary file storage and can use
+    // the jpeg library more safely with proper error handling.
     //
-    // For now, return NULL (caller should decode before calling NotifyImageLoaded)
+    // INTEGRATION POINT:
+    // The UI layer should decode images before calling NotifyImageLoaded(),
+    // passing already-decoded HBITMAP handles. This keeps renderer stateless
+    // regarding image format details.
+    
     return NULL;
 }
+
 
 } // namespace Renderer

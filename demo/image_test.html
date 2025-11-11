@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Loading Test - Retro Browser</title>
+</head>
+<body>
+    <h1>Image Loading Test Page</h1>
+    
+    <p>This page demonstrates the asynchronous image loading feature of the Win98 Retro Browser.</p>
+    
+    <h2>Test Case 1: Simple BMP Image</h2>
+    <p>A basic bitmap image should load and display below:</p>
+    <img src="http://example.com/test.bmp" alt="Test Image 1">
+    
+    <h2>Test Case 2: Multiple Images</h2>
+    <p>Multiple images loading in parallel (note: images appear progressively, not all at once):</p>
+    <img src="http://example.com/image1.bmp" alt="Image 1">
+    <img src="http://example.com/image2.bmp" alt="Image 2">
+    <img src="http://example.com/image3.bmp" alt="Image 3">
+    
+    <h2>Test Case 3: Relative Path</h2>
+    <p>Image with relative URL (resolved against page base URL):</p>
+    <img src="./relative/path/image.bmp" alt="Relative Image">
+    
+    <h2>Test Case 4: Alt Text Display</h2>
+    <p>The following image URL is invalid. You should see the alt text instead:</p>
+    <img src="http://example.com/nonexistent.bmp" alt="This image does not exist - you should see this alt text">
+    
+    <h2>Test Case 5: Mixed Content</h2>
+    <p>Images interspersed with text content:</p>
+    <p>This is a paragraph before the image.</p>
+    <img src="http://example.com/mixed1.bmp" alt="Mixed Content Image 1">
+    <p>This is a paragraph between images.</p>
+    <img src="http://example.com/mixed2.bmp" alt="Mixed Content Image 2">
+    <p>This is a paragraph after the image.</p>
+    
+    <h2>Test Notes</h2>
+    <p>Current implementation notes:</p>
+    <ul>
+        <li>Only BMP format is supported (Win98 native)</li>
+        <li>Images load asynchronously (no UI freeze)</li>
+        <li>Progressive rendering (images appear as they load)</li>
+        <li>Alt text displayed while loading or on error</li>
+        <li>Cache holds up to 50 images with LRU eviction</li>
+    </ul>
+    
+    <h2>Creating Test Images</h2>
+    <p>To create test BMP images on Windows:</p>
+    <ol>
+        <li>Open Paint (mspaint.exe)</li>
+        <li>Create a simple drawing</li>
+        <li>Save As → BMP format</li>
+        <li>Host on local web server or proxy</li>
+    </ol>
+    
+    <h2>Expected Behavior</h2>
+    <p>When loading this page:</p>
+    <ol>
+        <li>Page appears immediately with text content</li>
+        <li>Image placeholders show alt text initially</li>
+        <li>Images load in background (parallel downloads)</li>
+        <li>Each image appears as soon as decoded</li>
+        <li>Failed images continue showing alt text</li>
+        <li>Browser remains responsive during loading</li>
+    </ol>
+    
+    <h3>Performance Notes</h3>
+    <p>On a typical Win98 system (200MHz CPU, 56k dialup):</p>
+    <ul>
+        <li>Page load: Instant (text only)</li>
+        <li>Per-image load time: 1-5 seconds (depending on size/connection)</li>
+        <li>Total page time: Varies (async, not sequential)</li>
+    </ul>
+    
+    <p>Last updated: 2025-11-11</p>
+</body>
+</html>

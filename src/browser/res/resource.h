@@ -187,7 +187,7 @@
 // BINDINGS (defined in .rc ACCELERATORS section):
 //   F5          -> IDM_VIEW_REFRESH
 //   Ctrl+Q      -> IDM_FILE_EXIT (alternative to Alt+F4)
-//   Ctrl+L      -> Set focus to IDC_ADDRESS_EDIT (optional, Phase 5)
+//   Ctrl+L      -> IDM_FOCUS_ADDRESS (Set focus to address bar)
 // USAGE:
 //   HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCELERATORS));
 //   // In message loop: if (!TranslateAccelerator(hwnd, hAccel, &msg)) { ... }
@@ -196,6 +196,22 @@
 // PHASE: Optional (Phase 5). Improves power-user efficiency.
 // RATIONALE: Placed in same range as IDR_MAIN_MENU (100) since both are IDR_
 //            resource types providing user interaction mechanisms.
+
+#define IDM_FOCUS_ADDRESS               141
+// Command: Ctrl+L accelerator to set focus to address bar (IDC_ADDRESS_EDIT).
+// HANDLER: In WM_COMMAND handler:
+//          if (LOWORD(wParam) == IDM_FOCUS_ADDRESS) {
+//              SetFocus(GetDlgItem(hwnd, IDC_ADDRESS_EDIT));
+//              // Optional: Select all text for quick overwrite
+//              SendMessage(hAddressEdit, EM_SETSEL, 0, -1);
+//          }
+// PHASE: Optional (Phase 5). UX enhancement for keyboard-centric users.
+// RATIONALE: Standard browser behavior (Chrome, Firefox use Ctrl+L/Alt+D).
+//            Improves navigation efficiency without mouse interaction.
+// ACCELERATOR BINDING: Defined in .rc ACCELERATORS section as:
+//                      "L", IDM_FOCUS_ADDRESS, VIRTKEY, CONTROL
+// NOTE: This is a command ID for accelerator, not a menu item. No menu entry
+//       needed in IDR_MAIN_MENU structure.
 
 
 // ============================================================================
@@ -553,10 +569,10 @@
 // SET TO: 250 (adequate buffer for dialog and resource expansion).
 // NOTE: IDR_ACCELERATORS (140) relocated to Section 2 with other IDR_ resources.
 
-#define _APS_NEXT_COMMAND_VALUE         150
+#define _APS_NEXT_COMMAND_VALUE         142
 // Next available ID for menu commands (IDM_*) and accelerators.
-// CURRENT HIGHEST: IDR_ACCELERATORS (140).
-// SET TO: 150 (leaves room in 140-149 for additional accelerator tables).
+// CURRENT HIGHEST: IDM_FOCUS_ADDRESS (141).
+// SET TO: 142 (leaves room in 140-149 for additional accelerator commands).
 
 #define _APS_NEXT_CONTROL_VALUE         490
 // Next available ID for dialog and window controls (IDC_*).

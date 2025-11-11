@@ -43,8 +43,12 @@
 // Avoids #include "../parser/parser.h" to minimize dependencies and
 // compilation cascades. Full definition only needed in ui.cpp.
 
-struct ParsedPageData;      // Defined in parser/parser.h, opaque here
-                             // Contains parsed HTML tree for rendering
+// Forward declare namespace and struct for opaque pointer pattern
+namespace Parser {
+    struct ParseResult;
+}
+// Type alias for cleaner API (UI uses ParsedPageData, implementation uses ParseResult)
+typedef Parser::ParseResult ParsedPageData;
 
 
 // ============================================================================
@@ -95,6 +99,13 @@ struct ParsedPageData;      // Defined in parser/parser.h, opaque here
  *           lParam: const TCHAR* szStatus (heap ptr, UI frees after display)
  *  @note Thread-safe alternative to direct UI_SetStatusText call */
 #define UIM_STATUS_UPDATE       (WM_APP + 6)
+
+/** @brief Image loading completed from worker thread.
+ *  @details wParam: HBITMAP handle (ownership transferred to renderer)
+ *           lParam: char* image URL (heap ptr, UI frees after caching)
+ *  @note Worker thread downloads and decodes image, posts result to UI thread.
+ *        UI forwards to renderer via NotifyImageLoaded(), triggers repaint. */
+#define UIM_IMAGE_LOADED        (WM_APP + 7)
 
 
 // ============================================================================

@@ -11,16 +11,22 @@
             ],
             "defines": [
                 "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
+                "_MBCS",
                 "WIN32",
-                "_WINDOWS"
+                "_WINDOWS",
+                "_WIN32_WINNT=0x0410",
+                "WINVER=0x0410"
             ],
             "windowsSdkVersion": "10.0.22000.0",
-            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.latest/bin/Hostx64/x64/cl.exe",
-            "cStandard": "c17",
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.latest/bin/Hostx86/x86/cl.exe",
+            "cStandard": "c89",
             "cppStandard": "c++98",
-            "intelliSenseMode": "windows-msvc-x64",
+            "intelliSenseMode": "windows-msvc-x86",
+            "compilerArgs": [
+                "/MT",
+                "/GX",
+                "/Zc:wchar_t-"
+            ],
             "browse": {
                 "path": [
                     "${workspaceFolder}"

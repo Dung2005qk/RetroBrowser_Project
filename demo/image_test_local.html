@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Local Image Test - RetroBrowser</title>
+</head>
+<body>
+    <h1>Local Image Loading Test</h1>
+    
+    <p>This page tests image loading with locally created BMP files.</p>
+    
+    <h2>Test 1: Single Large Image</h2>
+    <p>Blue test image (300x200):</p>
+    <img src="images/test_image.bmp" alt="Test Image - Should be Blue">
+    
+    <h2>Test 2: Multiple Images (Parallel Loading)</h2>
+    <p>Three colored images should load in parallel:</p>
+    <p>Red Image:</p>
+    <img src="images/image1.bmp" alt="Image 1 - Red">
+    <p>Green Image:</p>
+    <img src="images/image2.bmp" alt="Image 2 - Green">
+    <p>Orange Image:</p>
+    <img src="images/image3.bmp" alt="Image 3 - Orange">
+    
+    <h2>Test 3: Relative Path</h2>
+    <p>Purple image with relative path:</p>
+    <img src="./images/test.bmp" alt="Relative Path Image - Purple">
+    
+    <h2>Test 4: Error Handling (404)</h2>
+    <p>Non-existent image - should show alt text:</p>
+    <img src="images/does_not_exist.bmp" alt="ERROR: This image does not exist">
+    
+    <h2>Test 5: Mixed Content</h2>
+    <p>Text and images interspersed:</p>
+    <p>This is a paragraph before the first image.</p>
+    <img src="images/image1.bmp" alt="Red">
+    <p>This is a paragraph between images.</p>
+    <img src="images/image2.bmp" alt="Green">
+    <p>This is a paragraph after the last image.</p>
+    
+    <h2>Expected Behavior</h2>
+    <ul>
+        <li>Page loads instantly (text appears immediately)</li>
+        <li>Alt text shows first for all images</li>
+        <li>Images appear progressively (one by one)</li>
+        <li>Browser remains responsive during loading</li>
+        <li>Non-existent image shows alt text permanently</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    <p>If images don't appear:</p>
+    <ol>
+        <li>Check that demo/images/*.bmp files exist</li>
+        <li>Check proxy is running on port 8888</li>
+        <li>Check that local HTTP server is running</li>
+        <li>Check browser console/debug output</li>
+    </ol>
+    
+    <p><a href="/">Back to Home</a></p>
+</body>
+</html>
