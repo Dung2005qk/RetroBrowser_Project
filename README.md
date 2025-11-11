@@ -133,7 +133,7 @@ Dự án này là minh chứng cho việc áp dụng các khái niệm Hệ Đi�
 │  │                    RetroBrowser.exe (C++)                         │  │
 │  │  ┌─────────────┐  ┌──────────────┐  ┌────────────┐  ┌────────┐    │  │
 │  │  │   UI Module │──│ Main/Core    │──│   Network  │──│ Parser │    │  │
-│  │  │  (Win32 GUI)│  │ (Orchestrator)│ │  (Winsock) │  │ (FSM)  │    │  │
+│  │  │  (Win32 GUI)│  │(Orchestrator)│  │  (Winsock) │  │ (FSM)  │    │  │
 │  │  └──────┬──────┘  └──────┬───────┘  └─────┬──────┘  └────┬───┘    │  │
 │  │         │                │                │              │        │  │
 │  │         │                └─────────┬──────┘              │        │  │
