@@ -110,23 +110,40 @@ class ProxyRequestHandler(socketserver.BaseRequestHandler):
             
             # 1. Receive and parse the client's request
             method, path, upstream_url = self._parse_client_request()
+            
+            # 2. Handle special proxy endpoints (e.g., image proxying)
+            # Check both formats:
+            #   - /image?url=...  (custom format with leading slash)
+            #   - http://hostname/image?url=... (standard proxy format)
+            is_image_endpoint = False
+            if path and path.startswith('/image?url='):
+                is_image_endpoint = True
+            elif upstream_url and '/image?url=' in upstream_url:
+                # Extract path part from full URL for image endpoint
+                parsed = urlparse(upstream_url)
+                if parsed.path.startswith('/image') and 'url=' in parsed.query:
+                    path = parsed.path + '?' + parsed.query
+                    is_image_endpoint = True
+            
+            if is_image_endpoint:
+                client_ip, client_port = self.request.getpeername()
+                logger.info(f"Image proxy request from {client_ip}:{client_port}")
+                self._handle_image_proxy_request(path)
+                return
+            
+            # 3. For normal requests, upstream_url must be present
             if not upstream_url:
                 return # Error already sent by parser
 
             client_ip, client_port = self.request.getpeername()
             logger.info(f"Request received from {client_ip}:{client_port} for URL: {upstream_url}")
 
-            # 2. Handle special proxy endpoints (e.g., image proxying)
-            if path.startswith('/image?url='):
-                self._handle_image_proxy_request(path)
-                return
-
-            # 3. Perform pre-flight security checks
+            # 4. Perform pre-flight security checks
             parsed_url = urlparse(upstream_url)
             if not self._validate_request(parsed_url):
                 return # Error already sent by validator
 
-            # 4. Check cache if enabled
+            # 5. Check cache if enabled
             if ENABLE_SIMPLE_CACHING:
                 cache_hit = self._get_from_cache(upstream_url)
                 if cache_hit:
@@ -198,8 +215,19 @@ class ProxyRequestHandler(socketserver.BaseRequestHandler):
                 self._send_error_response(405, "Method Not Allowed", "Only GET is supported.")
                 return None, None, None
 
-            # The browser sends the full URL in the path, prefixed with a '/'
-            if len(path) > 1 and (path.startswith('/http://') or path.startswith('/https://')):
+            # Check for special proxy endpoints first (these don't follow URL format)
+            if path.startswith('/image?url='):
+                # Image proxy endpoint - return as-is
+                return method, path, None  # upstream_url = None for special endpoints
+            
+            # Support both standard proxy format and custom format with leading slash:
+            # Standard: GET http://example.com HTTP/1.1
+            # Custom:   GET /http://example.com HTTP/1.1
+            if path.startswith('http://') or path.startswith('https://'):
+                # Standard proxy format (no leading slash)
+                return method, path, path
+            elif len(path) > 1 and (path.startswith('/http://') or path.startswith('/https://')):
+                # Custom format with leading slash
                 return method, path, path[1:]
 
             self._send_error_response(400, "Bad Request", "Invalid URL format in path.")
