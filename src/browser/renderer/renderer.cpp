@@ -23,6 +23,8 @@ HtmlRenderer::HtmlRenderer()
     , m_layoutDirty(true)
     , m_totalContentHeight(0)
     , m_scrollY(0)
+    , m_pageBackgroundColor(BACKGROUND_COLOR)  // Default white
+    , m_pageTextColor(TEXT_COLOR)              // Default black
     , m_hFontH1(NULL)
     , m_hFontH2(NULL)
     , m_hFontH3(NULL)
@@ -172,6 +174,33 @@ void HtmlRenderer::SetContent(const std::vector<Parser::HtmlBlock>& blocks)
         m_blocks.reserve(blocks.size());
     }
     
+    // ========================================================================
+    // CRITICAL: Extract page-level colors from <body> tag
+    // ========================================================================
+    // RATIONALE: HTML 3.2 sites (like textfiles.com) use <body bgcolor text>
+    //            These should apply to the ENTIRE page, not just BODY block.
+    //            Reset to defaults first, then override if <body> exists.
+    m_pageBackgroundColor = BACKGROUND_COLOR;  // Default white
+    m_pageTextColor = TEXT_COLOR;              // Default black
+    
+    // SIMPLIFIED LOGIC: Check ALL blocks for parsed backgroundColor/textColor
+    // Don't rely on attributes map keys - parser may have consumed them.
+    // First block with colors is likely <body> tag.
+    for (size_t i = 0; i < m_blocks.size(); ++i) {
+        bool hasColors = (m_blocks[i].backgroundColor != -1 || m_blocks[i].textColor != -1);
+        
+        if (hasColors) {
+            // Found a block with page-level colors (likely <body>)
+            if (m_blocks[i].backgroundColor != -1) {
+                m_pageBackgroundColor = m_blocks[i].backgroundColor;
+            }
+            if (m_blocks[i].textColor != -1) {
+                m_pageTextColor = m_blocks[i].textColor;
+            }
+            break;  // Stop at first block with colors (assume it's <body>)
+        }
+    }
+    
     // Invalidate layout
     m_displayList.clear();
     m_clickableAreas.clear();
@@ -256,6 +285,18 @@ void HtmlRenderer::CalculateLayout(HWND hwnd, const RECT& clientRect)
     for (size_t i = 0; i < m_blocks.size(); ++i) {
         const Parser::HtmlBlock& block = m_blocks[i];
         
+        // Skip BLOCK_UNKNOWN (e.g., <body> tag) - these are structural only
+        // Their colors are already extracted into m_pageBackgroundColor/m_pageTextColor
+        if (block.type == Parser::BLOCK_UNKNOWN) {
+            continue;
+        }
+        
+        // Skip BLOCK_DIV (e.g., <table>, <tr>, <td>) - these are wrappers
+        // Content inside them is in separate blocks
+        if (block.type == Parser::BLOCK_DIV) {
+            continue;
+        }
+        
         // Select appropriate font
         HFONT hFont = GetFontForBlockType(block.type);
         HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
@@ -325,6 +366,14 @@ void HtmlRenderer::CalculateLayout(HWND hwnd, const RECT& clientRect)
         item.bounds = measureRect;
         item.content = block.content;
         item.attributes = block.attributes;
+        
+        // Copy CSS styling properties from HtmlBlock
+        item.textColor = block.textColor;
+        item.backgroundColor = block.backgroundColor;
+        item.fontWeight = block.fontWeight;
+        item.fontItalic = block.fontItalic;
+        item.fontSize = block.fontSize;
+        
         m_displayList.push_back(item);
         
         // Add clickable area for hyperlinks
@@ -426,8 +475,17 @@ RenderResult HtmlRenderer::Render(HWND hwnd, HDC hdc, const RECT& visibleRect)
     // Choose drawing target
     HDC drawDC = directDraw ? hdc : m_memDC;
     
-    // Clear background
-    FillRect(drawDC, &clientRect, m_hBackgroundBrush);
+    // ========================================================================
+    // Clear background with page-level color from <body bgcolor>
+    // ========================================================================
+    HBRUSH hPageBgBrush = CreateSolidBrush(m_pageBackgroundColor);
+    if (hPageBgBrush) {
+        FillRect(drawDC, &clientRect, hPageBgBrush);
+        DeleteObject(hPageBgBrush);
+    } else {
+        // Fallback to default brush
+        FillRect(drawDC, &clientRect, m_hBackgroundBrush);
+    }
     
     // Address bar offset (ADDRESS_BAR_HEIGHT=24 + UI_PADDING*2=4)
     const int ADDRESS_BAR_OFFSET = 28;
@@ -732,12 +790,63 @@ void HtmlRenderer::RenderBlock(HDC hdc, const RenderItem& item)
     RECT screenRect = item.bounds;
     OffsetRect(&screenRect, 0, -m_scrollY);
     
-    // Select appropriate font
-    HFONT hFont = GetFontForBlockType(item.type);
-    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+    // ====================================================================
+    // CSS STYLING: Apply background color if specified
+    // ====================================================================
+    HBRUSH hBgBrush = NULL;
+    if (item.backgroundColor != -1) {
+        // Custom background color from CSS
+        hBgBrush = CreateSolidBrush(item.backgroundColor);
+        if (hBgBrush) {
+            FillRect(hdc, &screenRect, hBgBrush);
+            DeleteObject(hBgBrush); // Clean up immediately
+        }
+    }
+    
+    // ====================================================================
+    // CSS STYLING: Select font with custom weight/italic if specified
+    // ====================================================================
+    HFONT hFont = NULL;
+    HFONT hOldFont = NULL;
+    
+    if (item.fontWeight != FW_NORMAL || item.fontItalic || item.fontSize > 0) {
+        // Need custom font - create it on the fly
+        int fontSize = item.fontSize > 0 ? item.fontSize : FONT_SIZE_DEFAULT;
+        
+        // Convert logical font size to device units
+        int logPixelsY = GetDeviceCaps(hdc, LOGPIXELSY);
+        int fontHeight = -MulDiv(fontSize, logPixelsY, 72);
+        
+        hFont = CreateFont(
+            fontHeight, 0, 0, 0,
+            item.fontWeight,      // FW_BOLD or FW_NORMAL from CSS
+            item.fontItalic,      // TRUE for italic, FALSE for normal
+            FALSE, FALSE,         // No underline/strikeout
+            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+            DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial"
+        );
+        
+        if (hFont) {
+            hOldFont = (HFONT)SelectObject(hdc, hFont);
+        } else {
+            // Fallback to default font for block type
+            hFont = GetFontForBlockType(item.type);
+            hOldFont = (HFONT)SelectObject(hdc, hFont);
+        }
+    } else {
+        // Use default font for block type
+        hFont = GetFontForBlockType(item.type);
+        hOldFont = (HFONT)SelectObject(hdc, hFont);
+    }
     
     // Set background mode for text
     SetBkMode(hdc, TRANSPARENT);
+    
+    // ====================================================================
+    // CSS STYLING: Apply text color if specified
+    // ====================================================================
+    // Use item-specific color if present, otherwise page-level <body text>
+    COLORREF textColor = (item.textColor != -1) ? item.textColor : m_pageTextColor;
     
     switch (item.type) {
         case Parser::BLOCK_TEXT:
@@ -745,13 +854,14 @@ void HtmlRenderer::RenderBlock(HDC hdc, const RenderItem& item)
         case Parser::BLOCK_H1:
         case Parser::BLOCK_H2:
         case Parser::BLOCK_H3:
-            SetTextColor(hdc, TEXT_COLOR);
+            SetTextColor(hdc, textColor);
             DrawText(hdc, item.content.c_str(), -1, &screenRect, DT_WORDBREAK);
             break;
             
         case Parser::BLOCK_A: {
-            // Draw link text in blue
-            SetTextColor(hdc, LINK_COLOR);
+            // Draw link text (use custom color if specified, otherwise default link blue)
+            COLORREF linkColor = (item.textColor != -1) ? item.textColor : LINK_COLOR;
+            SetTextColor(hdc, linkColor);
             DrawText(hdc, item.content.c_str(), -1, &screenRect, DT_WORDBREAK);
             
             // Draw underline
@@ -759,10 +869,14 @@ void HtmlRenderer::RenderBlock(HDC hdc, const RenderItem& item)
             // For multi-line links (word-wrapped), this will only underline the last line.
             // A complete implementation would need to measure each line separately using
             // GetTextMetrics and draw individual underlines per line.
-            HPEN hOldPen = (HPEN)SelectObject(hdc, m_hLinkPen);
-            MoveToEx(hdc, screenRect.left, screenRect.bottom - 1, NULL);
-            LineTo(hdc, screenRect.right, screenRect.bottom - 1);
-            SelectObject(hdc, hOldPen);
+            HPEN hUnderlinePen = CreatePen(PS_SOLID, 1, linkColor);
+            if (hUnderlinePen) {
+                HPEN hOldPen = (HPEN)SelectObject(hdc, hUnderlinePen);
+                MoveToEx(hdc, screenRect.left, screenRect.bottom - 1, NULL);
+                LineTo(hdc, screenRect.right, screenRect.bottom - 1);
+                SelectObject(hdc, hOldPen);
+                DeleteObject(hUnderlinePen);
+            }
             break;
         }
             
@@ -821,7 +935,7 @@ void HtmlRenderer::RenderBlock(HDC hdc, const RenderItem& item)
             char bullet[4] = { (char)0x95, ' ', 0 };  // Bullet + space + null terminator
             RECT bulletRect = screenRect;
             bulletRect.right = bulletRect.left + 20; // Bullet width
-            SetTextColor(hdc, TEXT_COLOR);
+            SetTextColor(hdc, textColor); // Use custom color if specified
             DrawText(hdc, bullet, -1, &bulletRect, DT_LEFT | DT_TOP | DT_SINGLELINE);
             
             // Draw list item text with indent
@@ -833,18 +947,23 @@ void HtmlRenderer::RenderBlock(HDC hdc, const RenderItem& item)
             bool isLink = (hrefIt != item.attributes.end() && !hrefIt->second.empty());
             
             if (isLink) {
-                // Render as link: blue text + underline
-                SetTextColor(hdc, LINK_COLOR);
+                // Render as link: use custom color if specified, otherwise link blue
+                COLORREF linkColor = (item.textColor != -1) ? item.textColor : LINK_COLOR;
+                SetTextColor(hdc, linkColor);
                 DrawText(hdc, item.content.c_str(), -1, &textRect, DT_WORDBREAK);
                 
                 // Draw underline for link
-                HPEN hOldPen = (HPEN)SelectObject(hdc, m_hLinkPen);
-                MoveToEx(hdc, textRect.left, textRect.bottom - 1, NULL);
-                LineTo(hdc, textRect.right, textRect.bottom - 1);
-                SelectObject(hdc, hOldPen);
+                HPEN hUnderlinePen = CreatePen(PS_SOLID, 1, linkColor);
+                if (hUnderlinePen) {
+                    HPEN hOldPen = (HPEN)SelectObject(hdc, hUnderlinePen);
+                    MoveToEx(hdc, textRect.left, textRect.bottom - 1, NULL);
+                    LineTo(hdc, textRect.right, textRect.bottom - 1);
+                    SelectObject(hdc, hOldPen);
+                    DeleteObject(hUnderlinePen);
+                }
             } else {
-                // Regular list item: normal text color
-                SetTextColor(hdc, TEXT_COLOR);
+                // Regular list item: use custom text color if specified
+                SetTextColor(hdc, textColor);
                 DrawText(hdc, item.content.c_str(), -1, &textRect, DT_WORDBREAK);
             }
             break;
@@ -855,7 +974,15 @@ void HtmlRenderer::RenderBlock(HDC hdc, const RenderItem& item)
             break;
     }
     
+    // Restore original font
     SelectObject(hdc, hOldFont);
+    
+    // Clean up custom font if we created one
+    if (item.fontWeight != FW_NORMAL || item.fontItalic || item.fontSize > 0) {
+        if (hFont) {
+            DeleteObject(hFont);
+        }
+    }
 }
 
 // ============================================================================
@@ -966,7 +1093,7 @@ int HtmlRenderer::GetBlockSpacing(Parser::BlockType blockType)
         case Parser::BLOCK_LI:
             return BLOCK_SPACING_BASE / 3; // Small spacing between list items
         case Parser::BLOCK_DIV:
-            return BLOCK_SPACING_BASE / 2; // Small spacing for containers
+            return 0; // No spacing - used for TABLE/TR/TD wrappers
         case Parser::BLOCK_SPAN:
             return 0; // Inline element, no vertical spacing
         default:

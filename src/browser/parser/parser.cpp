@@ -23,6 +23,11 @@ namespace Parser
     static inline char ToLower(char c);
     static bool IsOnlyWhitespace(const std::vector<char>& data);
     
+    // CSS parsing helpers (forward declarations)
+    static int ParseCssColor(const std::string& colorStr);
+    static void ParseInlineStyle(const std::string& styleStr, HtmlBlock& block);
+    static void ParseLegacyHtmlColors(const std::map<std::string, std::string>& attributes, HtmlBlock& block);
+    
     // ========================================================================
     // FinalizeAndAddBlock - DRY Helper to Create and Add Block
     // ========================================================================
@@ -53,7 +58,13 @@ namespace Parser
             return;
         }
         
-        if (type != BLOCK_UNKNOWN)
+        // ====================================================================
+        // SPECIAL CASE: <body> tag - Extract page-level colors even though
+        // it's BLOCK_UNKNOWN. This ensures bgcolor/text attributes are captured.
+        // ====================================================================
+        bool isBodyTag = (tagName == "body");
+        
+        if (type != BLOCK_UNKNOWN || isBodyTag)
         {
             HtmlBlock block(type);
             block.attributes = attributes;
@@ -68,6 +79,18 @@ namespace Parser
                     block.content = it->second;
                 }
             }
+            
+            // CSS STYLING: Parse inline "style" attribute if present
+            std::map<std::string, std::string>::const_iterator styleIt = 
+                attributes.find("style");
+            if (styleIt != attributes.end())
+            {
+                ParseInlineStyle(styleIt->second, block);
+            }
+            
+            // LEGACY HTML: Parse old-school HTML 3.2 color attributes
+            // (BGCOLOR, TEXT, COLOR) - critical for retro sites like textfiles.com!
+            ParseLegacyHtmlColors(attributes, block);
             
             result.blocks.push_back(block);
         }
@@ -302,6 +325,18 @@ namespace Parser
                                     // Matching closing tag - finalize container block
                                     HtmlBlock block(containerType, containerContent);
                                     block.attributes = containerAttrs;
+                                    
+                                    // CSS STYLING: Parse inline "style" attribute if present
+                                    std::map<std::string, std::string>::const_iterator styleIt = 
+                                        containerAttrs.find("style");
+                                    if (styleIt != containerAttrs.end())
+                                    {
+                                        ParseInlineStyle(styleIt->second, block);
+                                    }
+                                    
+                                    // LEGACY HTML: Parse old-school color attributes
+                                    ParseLegacyHtmlColors(containerAttrs, block);
+                                    
                                     result.blocks.push_back(block);
                                     
                                     // Reset container state
@@ -350,7 +385,7 @@ namespace Parser
                                     if (!attributes.empty())
                                     {
                                         // Copy href from <a> to container attrs
-                                        auto it = attributes.find("href");
+                                        std::map<std::string, std::string>::const_iterator it = attributes.find("href");
                                         if (it != attributes.end())
                                         {
                                             containerAttrs["href"] = it->second;
@@ -364,6 +399,18 @@ namespace Parser
                                     // Other nested cases: finalize outer, start new
                                     HtmlBlock block(containerType, containerContent);
                                     block.attributes = containerAttrs;
+                                    
+                                    // CSS STYLING: Parse inline "style" attribute if present
+                                    std::map<std::string, std::string>::const_iterator styleIt = 
+                                        containerAttrs.find("style");
+                                    if (styleIt != containerAttrs.end())
+                                    {
+                                        ParseInlineStyle(styleIt->second, block);
+                                    }
+                                    
+                                    // LEGACY HTML: Parse old-school color attributes
+                                    ParseLegacyHtmlColors(containerAttrs, block);
+                                    
                                     result.blocks.push_back(block);
                                     
                                     // Start new container
@@ -387,6 +434,12 @@ namespace Parser
                                 // CRITICAL FIX: Structural wrappers - don't create blocks
                                 // but DO continue parsing their content (nested tags)
                                 // Just silently ignore the wrapper tags themselves
+                            }
+                            else if (tagName == "body")
+                            {
+                                // SPECIAL CASE: <body> tag must be finalized to extract
+                                // bgcolor/text color attributes for page-level styling
+                                FinalizeAndAddBlock(tagName, attributes, result);
                             }
                             else if (type != BLOCK_UNKNOWN)
                             {
@@ -438,7 +491,7 @@ namespace Parser
                             if (containerType == BLOCK_LI && type == BLOCK_A)
                             {
                                 // Merge: keep LI as container type but copy href from <a>
-                                auto it = attributes.find("href");
+                                std::map<std::string, std::string>::const_iterator it = attributes.find("href");
                                 if (it != attributes.end())
                                 {
                                     containerAttrs["href"] = it->second;
@@ -450,6 +503,15 @@ namespace Parser
                                 // Other nested cases: finalize outer, start new
                                 HtmlBlock block(containerType, containerContent);
                                 block.attributes = containerAttrs;
+                                
+                                // CSS STYLING: Parse inline "style" attribute if present
+                                std::map<std::string, std::string>::const_iterator styleIt = 
+                                    containerAttrs.find("style");
+                                if (styleIt != containerAttrs.end())
+                                {
+                                    ParseInlineStyle(styleIt->second, block);
+                                }
+                                
                                 result.blocks.push_back(block);
                                 
                                 containerType = type;
@@ -467,6 +529,11 @@ namespace Parser
                             // CRITICAL FIX: Structural wrappers - don't create blocks
                             // but DO continue parsing their content (nested tags)
                             // Just silently ignore the wrapper tags themselves
+                        }
+                        else if (tagName == "body")
+                        {
+                            // SPECIAL CASE: <body> with attributes - extract colors
+                            FinalizeAndAddBlock(tagName, attributes, result);
                         }
                         else if (type != BLOCK_UNKNOWN)
                         {
@@ -773,6 +840,7 @@ namespace Parser
                 break;
             case 'b':
                 if (tagName == "br") return BLOCK_BR;
+                if (tagName == "body") return BLOCK_UNKNOWN; // Special handling - extract colors in SetContent
                 break;
             case 'u':
                 if (tagName == "ul") return BLOCK_UL;
@@ -789,12 +857,27 @@ namespace Parser
                 break;
             case 'f':
                 if (tagName == "footer") return BLOCK_DIV; // Semantic HTML5
+                if (tagName == "font") return BLOCK_SPAN;  // Legacy HTML 3.2 - treat as inline
+                break;
+            case 'c':
+                if (tagName == "center") return BLOCK_DIV; // Legacy HTML 3.2 - treat as block
                 break;
             case 'n':
                 if (tagName == "nav") return BLOCK_DIV;    // Semantic HTML5
                 break;
             case 'm':
                 if (tagName == "main") return BLOCK_DIV;   // Semantic HTML5
+                break;
+            case 't':
+                // HTML 3.2 TABLE tags - map to DIV to preserve content flow
+                // Renderer will handle as block containers (no actual table layout)
+                if (tagName == "table") return BLOCK_DIV;
+                if (tagName == "tr") return BLOCK_DIV;
+                if (tagName == "td") return BLOCK_DIV;
+                if (tagName == "th") return BLOCK_DIV; // Table header cell
+                if (tagName == "tbody") return BLOCK_DIV;
+                if (tagName == "thead") return BLOCK_DIV;
+                if (tagName == "tfoot") return BLOCK_DIV;
                 break;
         }
 
@@ -1134,6 +1217,304 @@ namespace Parser
         }
 
         return result;
+    }
+
+    // ========================================================================
+    // CSS INLINE STYLE PARSING - Extract Color, Background, Font Properties
+    // ========================================================================
+    
+    /**
+     * @brief Parses CSS color string to GDI COLORREF value.
+     * @param colorStr CSS color value (e.g., "red", "#00FF00", "rgb(0,255,0)")
+     * @return COLORREF value (0x00BBGGRR), or -1 if invalid
+     * 
+     * SUPPORTED FORMATS:
+     *   - Named colors: "red", "green", "blue", "black", "white", etc.
+     *   - Hex: "#RGB" or "#RRGGBB"
+     *   - RGB: "rgb(r, g, b)" where r,g,b are 0-255
+     * 
+     * WHY: textfiles.com uses inline styles like style="color:green"
+     *      Win98 GDI needs COLORREF (RGB macro: 0x00BBGGRR)
+     */
+    static int ParseCssColor(const std::string& colorStr)
+    {
+        std::string color = colorStr;
+        
+        // Trim whitespace
+        while (!color.empty() && IsWhitespace(color[0]))
+            color.erase(0, 1);
+        while (!color.empty() && IsWhitespace(color[color.length() - 1]))
+            color.erase(color.length() - 1);
+        
+        // Convert to lowercase for comparison
+        for (size_t i = 0; i < color.length(); ++i)
+            color[i] = ToLower(color[i]);
+        
+        // Named colors (most common on retro sites)
+        if (color == "black") return RGB(0, 0, 0);
+        if (color == "white") return RGB(255, 255, 255);
+        if (color == "red") return RGB(255, 0, 0);
+        if (color == "green") return RGB(0, 128, 0);
+        if (color == "lime") return RGB(0, 255, 0);
+        if (color == "blue") return RGB(0, 0, 255);
+        if (color == "yellow") return RGB(255, 255, 0);
+        if (color == "cyan") return RGB(0, 255, 255);
+        if (color == "magenta") return RGB(255, 0, 255);
+        if (color == "gray" || color == "grey") return RGB(128, 128, 128);
+        if (color == "silver") return RGB(192, 192, 192);
+        if (color == "maroon") return RGB(128, 0, 0);
+        if (color == "olive") return RGB(128, 128, 0);
+        if (color == "purple") return RGB(128, 0, 128);
+        if (color == "teal") return RGB(0, 128, 128);
+        if (color == "navy") return RGB(0, 0, 128);
+        
+        // Hex color: #RGB or #RRGGBB
+        if (!color.empty() && color[0] == '#')
+        {
+            color.erase(0, 1); // Remove '#'
+            
+            unsigned int r = 0, g = 0, b = 0;
+            
+            if (color.length() == 3)
+            {
+                // #RGB -> #RRGGBB
+                char hexR[2] = { color[0], '\0' };
+                char hexG[2] = { color[1], '\0' };
+                char hexB[2] = { color[2], '\0' };
+                r = strtoul(hexR, NULL, 16) * 17; // F -> FF (15*17=255)
+                g = strtoul(hexG, NULL, 16) * 17;
+                b = strtoul(hexB, NULL, 16) * 17;
+                return RGB(r, g, b);
+            }
+            else if (color.length() == 6)
+            {
+                // #RRGGBB
+                char hexR[3] = { color[0], color[1], '\0' };
+                char hexG[3] = { color[2], color[3], '\0' };
+                char hexB[3] = { color[4], color[5], '\0' };
+                r = strtoul(hexR, NULL, 16);
+                g = strtoul(hexG, NULL, 16);
+                b = strtoul(hexB, NULL, 16);
+                return RGB(r, g, b);
+            }
+        }
+        
+        // RGB function: rgb(r, g, b)
+        if (color.length() > 4 && color.substr(0, 4) == "rgb(")
+        {
+            size_t closePos = color.find(')');
+            if (closePos != std::string::npos)
+            {
+                std::string values = color.substr(4, closePos - 4);
+                
+                // Parse three comma-separated integers
+                int r = 0, g = 0, b = 0;
+                int count = 0;
+                size_t pos = 0;
+                
+                while (pos < values.length() && count < 3)
+                {
+                    // Skip whitespace and commas
+                    while (pos < values.length() && 
+                           (IsWhitespace(values[pos]) || values[pos] == ','))
+                        pos++;
+                    
+                    // Parse number
+                    int num = 0;
+                    while (pos < values.length() && values[pos] >= '0' && values[pos] <= '9')
+                    {
+                        num = num * 10 + (values[pos] - '0');
+                        pos++;
+                    }
+                    
+                    if (count == 0) r = num;
+                    else if (count == 1) g = num;
+                    else if (count == 2) b = num;
+                    count++;
+                }
+                
+                if (count == 3)
+                {
+                    // Clamp to 0-255
+                    if (r < 0) r = 0; if (r > 255) r = 255;
+                    if (g < 0) g = 0; if (g > 255) g = 255;
+                    if (b < 0) b = 0; if (b > 255) b = 255;
+                    return RGB(r, g, b);
+                }
+            }
+        }
+        
+        // Invalid color
+        return -1;
+    }
+    
+    /**
+     * @brief Parses inline "style" attribute to extract CSS properties.
+     * @param styleStr CSS style string (e.g., "color:green;background-color:#000")
+     * @param block HtmlBlock to populate with parsed style properties
+     * 
+     * SUPPORTED PROPERTIES:
+     *   - color: Text color
+     *   - background-color: Block background color
+     *   - font-weight: bold/normal (FW_BOLD/FW_NORMAL)
+     *   - font-style: italic/normal (TRUE/FALSE)
+     *   - font-size: Size in pixels (e.g., "16px" -> 16)
+     * 
+     * EXAMPLE:
+     *   Input: "color: green; background-color: black; font-weight: bold"
+     *   Output: block.textColor = RGB(0,128,0)
+     *           block.backgroundColor = RGB(0,0,0)
+     *           block.fontWeight = FW_BOLD
+     */
+    static void ParseInlineStyle(const std::string& styleStr, HtmlBlock& block)
+    {
+        // Split style string by semicolons
+        size_t pos = 0;
+        while (pos < styleStr.length())
+        {
+            // Find next property (key:value;)
+            size_t colonPos = styleStr.find(':', pos);
+            if (colonPos == std::string::npos)
+                break;
+            
+            size_t semicolonPos = styleStr.find(';', colonPos);
+            if (semicolonPos == std::string::npos)
+                semicolonPos = styleStr.length();
+            
+            // Extract property name and value
+            std::string propName = styleStr.substr(pos, colonPos - pos);
+            std::string propValue = styleStr.substr(colonPos + 1, semicolonPos - colonPos - 1);
+            
+            // Trim whitespace
+            while (!propName.empty() && IsWhitespace(propName[0]))
+                propName.erase(0, 1);
+            while (!propName.empty() && IsWhitespace(propName[propName.length() - 1]))
+                propName.erase(propName.length() - 1);
+            while (!propValue.empty() && IsWhitespace(propValue[0]))
+                propValue.erase(0, 1);
+            while (!propValue.empty() && IsWhitespace(propValue[propValue.length() - 1]))
+                propValue.erase(propValue.length() - 1);
+            
+            // Convert property name to lowercase
+            for (size_t i = 0; i < propName.length(); ++i)
+                propName[i] = ToLower(propName[i]);
+            
+            // Parse specific properties
+            if (propName == "color")
+            {
+                int color = ParseCssColor(propValue);
+                if (color != -1)
+                    block.textColor = color;
+            }
+            else if (propName == "background-color" || propName == "background")
+            {
+                int color = ParseCssColor(propValue);
+                if (color != -1)
+                    block.backgroundColor = color;
+            }
+            else if (propName == "font-weight")
+            {
+                std::string val = propValue;
+                for (size_t i = 0; i < val.length(); ++i)
+                    val[i] = ToLower(val[i]);
+                
+                if (val == "bold" || val == "bolder" || val == "700" || 
+                    val == "800" || val == "900")
+                    block.fontWeight = FW_BOLD;
+                else if (val == "normal" || val == "400")
+                    block.fontWeight = FW_NORMAL;
+            }
+            else if (propName == "font-style")
+            {
+                std::string val = propValue;
+                for (size_t i = 0; i < val.length(); ++i)
+                    val[i] = ToLower(val[i]);
+                
+                if (val == "italic" || val == "oblique")
+                    block.fontItalic = TRUE;
+                else if (val == "normal")
+                    block.fontItalic = FALSE;
+            }
+            else if (propName == "font-size")
+            {
+                // Parse size in pixels (e.g., "16px", "1.2em" -> convert to px)
+                int size = 0;
+                for (size_t i = 0; i < propValue.length(); ++i)
+                {
+                    if (propValue[i] >= '0' && propValue[i] <= '9')
+                        size = size * 10 + (propValue[i] - '0');
+                    else
+                        break; // Stop at 'px', 'em', etc.
+                }
+                if (size > 0 && size < 200) // Reasonable range
+                    block.fontSize = size;
+            }
+            
+            // Move to next property
+            pos = semicolonPos + 1;
+        }
+    }
+    
+    /**
+     * @brief Parses legacy HTML color attributes (for retro HTML 3.2 compatibility)
+     * @param attributes Attribute map from HTML tag
+     * @param block HtmlBlock to populate with parsed colors
+     * 
+     * SUPPORTED LEGACY ATTRIBUTES (HTML 3.2 era):
+     *   - TEXT="color" - text color (on <BODY>)
+     *   - BGCOLOR="color" - background color (on <BODY>, <TABLE>, <TD>, <TR>)
+     *   - COLOR="color" - text color (on <FONT>)
+     *   - LINK="color" - link color (on <BODY>)
+     * 
+     * WHY: textfiles.com uses <BODY BGCOLOR="#000000" TEXT="00FF00"> instead of CSS!
+     *      This was standard practice in 1990s HTML 3.2.
+     */
+    static void ParseLegacyHtmlColors(
+        const std::map<std::string, std::string>& attributes,
+        HtmlBlock& block)
+    {
+        // TEXT attribute (text color) - used in <BODY>, <FONT>
+        std::map<std::string, std::string>::const_iterator textIt = 
+            attributes.find("text");
+        if (textIt != attributes.end())
+        {
+            // Parse color, handle formats with or without #
+            std::string colorStr = textIt->second;
+            if (!colorStr.empty() && colorStr[0] != '#')
+                colorStr = "#" + colorStr; // Add # if missing
+            
+            int color = ParseCssColor(colorStr);
+            if (color != -1)
+                block.textColor = color;
+        }
+        
+        // COLOR attribute (text color) - used in <FONT>
+        std::map<std::string, std::string>::const_iterator colorIt = 
+            attributes.find("color");
+        if (colorIt != attributes.end())
+        {
+            std::string colorStr = colorIt->second;
+            if (!colorStr.empty() && colorStr[0] != '#')
+                colorStr = "#" + colorStr;
+            
+            int color = ParseCssColor(colorStr);
+            if (color != -1)
+                block.textColor = color;
+        }
+        
+        // BGCOLOR attribute (background color) - used in <BODY>, <TABLE>, <TD>, <TR>
+        std::map<std::string, std::string>::const_iterator bgcolorIt = 
+            attributes.find("bgcolor");
+        if (bgcolorIt != attributes.end())
+        {
+            std::string colorStr = bgcolorIt->second;
+            if (!colorStr.empty() && colorStr[0] != '#')
+                colorStr = "#" + colorStr;
+            
+            int color = ParseCssColor(colorStr);
+            if (color != -1)
+                block.backgroundColor = color;
+        }
     }
 
     // ========================================================================

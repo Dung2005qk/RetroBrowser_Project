@@ -425,11 +425,71 @@ namespace Parser
         ///            }
         std::map<std::string, std::string> attributes;
 
+        // ====================================================================
+        // CSS STYLING PROPERTIES - Parsed from inline "style" attribute
+        // ====================================================================
+        // WHY: Modern web uses CSS for colors, backgrounds, fonts. To render
+        //      pages authentically (like textfiles.com green header), we need
+        //      to parse and apply basic inline CSS properties.
+        // 
+        // SCOPE: Only inline styles (style="color:red") are supported, NOT:
+        //        - External stylesheets (<link rel="stylesheet">)
+        //        - <style> blocks
+        //        - CSS selectors, cascading, specificity
+        // 
+        // PROPERTIES SUPPORTED (Win98 GDI-compatible subset):
+        //   - color: Text color (e.g., "green", "#00FF00", "rgb(0,255,0)")
+        //   - background-color: Block background (e.g., "black", "#000")
+        //   - font-weight: bold/normal (e.g., "bold", "700")
+        //   - font-style: italic/normal (e.g., "italic")
+        //   - font-size: Text size (e.g., "16px", "1.2em")
+        // 
+        // INVALID VALUES: Fallback to defaults (black text, white background)
+        // ====================================================================
+
+        /// @brief Parsed text color from CSS "color" property.
+        ///        DEFAULT: -1 (sentinel value, use renderer default color)
+        ///        VALID: GDI COLORREF (0x00BBGGRR format, RGB macro result)
+        ///        USAGE: if (textColor != -1) SetTextColor(hdc, textColor);
+        int textColor;
+
+        /// @brief Parsed background color from CSS "background-color" property.
+        ///        DEFAULT: -1 (sentinel, use renderer default background)
+        ///        VALID: GDI COLORREF (0x00BBGGRR format)
+        ///        USAGE: if (bgColor != -1) FillRect(hdc, &rect, CreateSolidBrush(bgColor));
+        int backgroundColor;
+
+        /// @brief Font weight parsed from CSS "font-weight" property.
+        ///        DEFAULT: FW_NORMAL (400) for normal text
+        ///        VALUES: FW_NORMAL (400), FW_BOLD (700) (GDI font weight constants)
+        ///        USAGE: CreateFont(..., fontWeight, ...)
+        int fontWeight;
+
+        /// @brief Font style parsed from CSS "font-style" property.
+        ///        DEFAULT: FALSE (not italic)
+        ///        VALUES: FALSE (normal), TRUE (italic)
+        ///        USAGE: CreateFont(..., fontItalic, ...)
+        BOOL fontItalic;
+
+        /// @brief Font size in logical pixels (parsed from "font-size").
+        ///        DEFAULT: 0 (sentinel, use renderer default size for block type)
+        ///        VALID: Positive integer (e.g., 12, 16, 24)
+        ///        USAGE: if (fontSize > 0) CreateFont(fontSize, ...)
+        int fontSize;
+
         /**
          * @brief Default constructor - initializes to a safe "unknown" state.
          *        Ensures uninitialized blocks are detectable and won't cause UB.
          */
-        HtmlBlock() : type(BLOCK_UNKNOWN), content("") {}
+        HtmlBlock() 
+            : type(BLOCK_UNKNOWN)
+            , content("")
+            , textColor(-1)
+            , backgroundColor(-1)
+            , fontWeight(FW_NORMAL)
+            , fontItalic(FALSE)
+            , fontSize(0)
+        {}
 
         /**
          * @brief Convenience constructor for blocks with type and content only.
@@ -439,7 +499,14 @@ namespace Parser
          * USAGE: HtmlBlock(BLOCK_TEXT, "Plain text paragraph");
          */
         HtmlBlock(BlockType t, const std::string& c = "")
-            : type(t), content(c) {}
+            : type(t)
+            , content(c)
+            , textColor(-1)
+            , backgroundColor(-1)
+            , fontWeight(FW_NORMAL)
+            , fontItalic(FALSE)
+            , fontSize(0)
+        {}
 
         /**
          * @brief Full constructor for blocks with type, content, and attributes.
@@ -454,7 +521,15 @@ namespace Parser
          *          HtmlBlock block(BLOCK_A, "Click", attrs);
          */
         HtmlBlock(BlockType t, const std::string& c, const std::map<std::string, std::string>& a)
-            : type(t), content(c), attributes(a) {}
+            : type(t)
+            , content(c)
+            , attributes(a)
+            , textColor(-1)
+            , backgroundColor(-1)
+            , fontWeight(FW_NORMAL)
+            , fontItalic(FALSE)
+            , fontSize(0)
+        {}
     };
 
     /**

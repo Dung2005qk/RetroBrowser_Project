@@ -162,6 +162,9 @@ ALLOWED_HTML_TAGS: Set[str] = {
     # Text formatting basic
     'b', 'i', 'u', 'strong', 'em',            
     
+    # LEGACY HTML 3.2 TAGS (for retro sites like textfiles.com)
+    'font', 'center',                          # <font color="..."> and <center>
+    
     # Containers (simple layout)
     'div', 'span',
     
@@ -179,23 +182,47 @@ ALLOWED_HTML_TAGS: Set[str] = {
 # Ví dụ: <nav>, <footer> không trong list -> bị loại bỏ hoàn toàn
 
 ALLOWED_HTML_ATTRIBUTES: Dict[str, Set[str]] = {
-    # Document structure (no attributes needed)
-    'html': set(), 'head': set(), 'body': set(), 'title': set(),
+    # Document structure - NOW WITH LEGACY HTML 3.2 COLOR ATTRIBUTES!
+    # CRITICAL: textfiles.com uses <BODY BGCOLOR="#000000" TEXT="00FF00">
+    'html': set(), 
+    'head': set(), 
+    'body': {'bgcolor', 'text', 'link', 'alink', 'vlink', 'style'},  # Legacy + modern
+    'title': set(),
     
     # Links and images
-    'a': {'href', 'title'},
-    'img': {'src', 'alt', 'width', 'height'},
+    'a': {'href', 'title', 'style'},
+    'img': {'src', 'alt', 'width', 'height', 'style'},
     
-    # Text containers
-    'p': set(),       # Không attributes nào
-    'div': set(),
-    'span': set(),
-    'h1': set(), 'h2': set(), 'h3': set(),
+    # Text containers - NOW WITH STYLE SUPPORT for colors/fonts!
+    'p': {'style'},
+    'div': {'style'},
+    'span': {'style'},
+    'h1': {'style'}, 'h2': {'style'}, 'h3': {'style'},
+    'h4': {'style'}, 'h5': {'style'}, 'h6': {'style'},
     
-    # Tables
-    'table': {'border'},
-    'td': {'colspan', 'rowspan'},
-    'th': {'colspan', 'rowspan'}
+    # LEGACY FONT TAG (HTML 3.2) - used by textfiles.com!
+    'font': {'color', 'face', 'size'},
+    
+    # Lists with styling
+    'ul': {'style'}, 'ol': {'style'}, 'li': {'style'},
+    
+    # Semantic HTML5 containers with styling
+    'section': {'style'}, 'article': {'style'}, 
+    'header': {'style'}, 'footer': {'style'}, 
+    'nav': {'style'}, 'main': {'style'}, 'aside': {'style'},
+    
+    # Text formatting
+    'b': {'style'}, 'i': {'style'}, 'u': {'style'}, 
+    'strong': {'style'}, 'em': {'style'},
+    
+    # Tables WITH LEGACY BGCOLOR!
+    'table': {'border', 'style', 'bgcolor', 'width'},
+    'tr': {'style', 'bgcolor'},
+    'td': {'colspan', 'rowspan', 'style', 'bgcolor', 'align', 'valign'},
+    'th': {'colspan', 'rowspan', 'style', 'bgcolor', 'align', 'valign'},
+    
+    # CENTER tag (deprecated but used in old HTML)
+    'center': set()
 }
 # Whitelist attributes AN TOÀN per tag - chặn onclick, style, onerror, etc.
 # - Key: tag name, Value: Set[str] attributes cho phép

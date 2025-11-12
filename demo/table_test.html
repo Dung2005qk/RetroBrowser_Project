@@ -1,0 +1,37 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+    <title>Table Test</title>
+</head>
+<body bgcolor="#FFFFFF" text="#000000">
+    <h1>Table with Image Test</h1>
+    
+    <p>Direct image (should show):</p>
+    <img src="http://via.placeholder.com/150x50/FF0000/FFFFFF?text=Direct" alt="Direct Image">
+    
+    <p>Image inside TABLE (testing if shown):</p>
+    <table>
+        <tr>
+            <td>
+                <img src="http://via.placeholder.com/150x50/00FF00/000000?text=InTable" alt="Table Image">
+            </td>
+        </tr>
+    </table>
+    
+    <p>Link outside table:</p>
+    <a href="test1.html">Link 1 (direct)</a>
+    
+    <p>Link inside table:</p>
+    <table>
+        <tr>
+            <td>
+                Before link text.
+                <a href="test2.html">Link 2 (in table)</a>
+                After link text.
+            </td>
+        </tr>
+    </table>
+    
+    <p>After table paragraph to verify parser continues.</p>
+</body>
+</html>

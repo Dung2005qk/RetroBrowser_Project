@@ -120,7 +120,7 @@ const int MARGIN_LEFT = 10;
 const int MARGIN_RIGHT = 10;
 const int MARGIN_TOP = 10;
 const float LINE_HEIGHT_MULTIPLIER = 1.5f;
-const int BLOCK_SPACING_BASE = 10;
+const int BLOCK_SPACING_BASE = 5; // Reduced from 10 for more compact layout
 const int BR_SPACING = 5;
 const int IMAGE_PLACEHOLDER_WIDTH = 150;
 const int IMAGE_PLACEHOLDER_HEIGHT = 100;
@@ -182,6 +182,24 @@ struct RenderItem
     RECT bounds;
     std::string content;
     std::map<std::string, std::string> attributes;
+    
+    // CSS styling properties (parsed from HtmlBlock)
+    int textColor;          // -1 = default, else COLORREF
+    int backgroundColor;    // -1 = default, else COLORREF
+    int fontWeight;         // FW_NORMAL or FW_BOLD
+    BOOL fontItalic;        // TRUE/FALSE
+    int fontSize;           // 0 = default, else pixel size
+    
+    RenderItem()
+        : type(Parser::BLOCK_UNKNOWN)
+        , textColor(-1)
+        , backgroundColor(-1)
+        , fontWeight(FW_NORMAL)
+        , fontItalic(FALSE)
+        , fontSize(0)
+    {
+        bounds.left = bounds.top = bounds.right = bounds.bottom = 0;
+    }
 };
 
 // ============================================================================
@@ -244,6 +262,10 @@ private:
     int m_totalContentHeight;
     int m_scrollY;
     RECT m_cachedClientRect;
+    
+    // Page-level CSS from <body> tag
+    COLORREF m_pageBackgroundColor;  // From <body bgcolor> or default
+    COLORREF m_pageTextColor;        // From <body text> or default
     
     // Content
     std::vector<Parser::HtmlBlock> m_blocks;
