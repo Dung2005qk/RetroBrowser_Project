@@ -1,0 +1,305 @@
+================================================================================
+Win98 API Compatibility Report
+================================================================================
+
+STATISTICS:
+  Total APIs detected: 167
+  Compatible APIs: 58 (34.7%)
+  Total issues: 73
+    - Errors: 0
+    - Warnings: 0
+    - Info: 73
+
+INFO (Unknown APIs - Manual Verification Needed):
+--------------------------------------------------------------------------------
+  src/browser\core\main.cpp:190
+    API: OnClose
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:349
+    API: UI_SetLoading
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:351
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:371
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:381
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:395
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:400
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:414
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:431
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:434
+    API: UI_SetAddressBar
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:441
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:447
+    API: UI_SetLoading
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:477
+    API: UI_SetAddressBar
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:499
+    API: OnClose
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\core\main.cpp:564
+    API: UI_CreateMainWindow
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\network\network.cpp:144
+    API: SetProxy
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\network\network.h:310
+    API: SetProxy
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\parser\parser.cpp:48
+    API: GetBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\parser\parser.cpp:322
+    API: GetBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\parser\parser.cpp:365
+    API: GetBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\parser\parser.cpp:476
+    API: GetBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\parser\parser.cpp:814
+    API: GetBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\parser\parser.h:854
+    API: GetBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:169
+    API: SetContent
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:301
+    API: GetFontForBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:305
+    API: GetBlockSpacing
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:537
+    API: GetTotalContentHeight
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:833
+    API: GetFontForBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:838
+    API: GetFontForBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:1049
+    API: GetFontForBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.cpp:1076
+    API: GetBlockSpacing
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.h:228
+    API: SetContent
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.h:235
+    API: GetTotalContentHeight
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.h:253
+    API: GetFontForBlockType
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\renderer\renderer.h:254
+    API: GetBlockSpacing
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:49
+    API: CreateControls
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:52
+    API: GetRenderAreaRect
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:53
+    API: ExtractAndSetPageTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:81
+    API: UI_CreateMainWindow
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:124
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:129
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:134
+    API: UI_SetAddressBar
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:142
+    API: UI_SetLoading
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:148
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:162
+    API: ExtractAndSetPageTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:167
+    API: SetContent
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:170
+    API: GetRenderAreaRect
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:177
+    API: GetTotalContentHeight
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:199
+    API: UI_GetMainWindowHandle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:200
+    API: UI_GetRenderAreaHWND
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:202
+    API: UI_GetAddressBarText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:233
+    API: CreateControls
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:292
+    API: GetRenderAreaRect
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:297
+    API: GetTotalContentHeight
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:455
+    API: UI_SetLoading
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:465
+    API: UI_SetLoading
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:478
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:540
+    API: CreateControls
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:587
+    API: UI_GetAddressBarText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:593
+    API: GetRenderAreaRect
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:607
+    API: ExtractAndSetPageTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:613
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:632
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:636
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.cpp:643
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:188
+    API: UI_CreateMainWindow
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:214
+    API: UI_SetWindowTitle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:221
+    API: UI_SetStatusText
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:228
+    API: UI_SetAddressBar
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:235
+    API: UI_SetLoading
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:255
+    API: UI_GetMainWindowHandle
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:263
+    API: UI_GetRenderAreaHWND
+    Suggestion: Verify in MSDN Win98 documentation
+
+  src/browser\ui\ui.h:271
+    API: UI_GetAddressBarText
+    Suggestion: Verify in MSDN Win98 documentation

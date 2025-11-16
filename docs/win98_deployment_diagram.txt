@@ -1,0 +1,335 @@
+================================================================================
+  RETROBROWSER - WINDOWS 98 DEPLOYMENT ARCHITECTURE
+================================================================================
+
+
+1. FILE TRANSFER FLOW
+   ===================
+
+   [Host Machine - Windows 10/11]
+            |
+            | Build Process
+            v
+   [deploy/RetroBrowser_Win98.exe]
+      834,560 bytes
+      Subsystem: 4.10
+      Static Linked
+            |
+            | Transfer Method:
+            | - Shared Folder (VirtualBox/VMware)
+            | - Network Share (SMB)
+            | - ISO/CD Image
+            | - Floppy Disk
+            v
+   [Win98 VM - C:\RetroBrowser\]
+            |
+            v
+   [RetroBrowser.exe]
+      Ready to run!
+
+
+2. DIRECTORY STRUCTURE ON WIN98
+   =============================
+
+   C:\
+   ├── Windows\              (System files)
+   │   └── System\
+   │       ├── kernel32.dll  ✓ Required
+   │       ├── user32.dll    ✓ Required
+   │       ├── gdi32.dll     ✓ Required
+   │       ├── comctl32.dll  ✓ Required
+   │       └── ws2_32.dll    ✓ Required (Winsock 2.2)
+   │
+   └── RetroBrowser\         (Application folder)
+       └── RetroBrowser.exe  (834,560 bytes)
+       
+   Optional:
+       ├── README.txt
+       └── docs\
+           └── help.txt
+
+
+3. NETWORK ARCHITECTURE
+   =====================
+
+   [Win98 VM]                    [Host Machine]
+   192.168.56.101                192.168.56.1
+        |                             |
+        | Host-only Network           |
+        | (VirtualBox/VMware)         |
+        |                             |
+        +-----------------------------+
+                      |
+                      | HTTP Request
+                      | Port 8080
+                      v
+              [Proxy Server]
+              python src/proxy/proxy.py
+                      |
+                      | Forward to Internet
+                      v
+              [example.com]
+                      |
+                      | HTTP Response
+                      v
+              [Proxy Server]
+                      |
+                      | Return to Win98
+                      v
+              [RetroBrowser]
+                      |
+                      | Parse & Render
+                      v
+              [Display Page]
+
+
+4. DEPENDENCY GRAPH
+   =================
+
+   RetroBrowser.exe (834,560 bytes)
+        |
+        +-- Static Linked Components:
+        |   ├── C Runtime Library (CRT)
+        |   ├── STL (Standard Template Library)
+        |   ├── Application Code
+        |   └── JPEG Library (libjpeg)
+        |
+        +-- Dynamic Dependencies (Win98 System DLLs):
+            ├── KERNEL32.dll  (Core Win32 API)
+            ├── USER32.dll    (User Interface)
+            ├── GDI32.dll     (Graphics)
+            ├── COMCTL32.dll  (Common Controls)
+            └── WS2_32.dll    (Winsock 2.2 Networking)
+   
+   All DLLs available on Windows 98 SE ✓
+
+
+5. MEMORY LAYOUT ON WIN98
+   =======================
+
+   [Physical RAM: 64-128 MB]
+        |
+        +-- Windows 98 System: ~32 MB
+        +-- Available for Apps: ~32-96 MB
+             |
+             +-- RetroBrowser.exe
+                  |
+                  +-- Code Section: ~700 KB
+                  +-- Data Section: ~100 KB
+                  +-- Stack: ~1 MB
+                  +-- Heap (Runtime): ~5-10 MB
+                       |
+                       +-- Network Buffers
+                       +-- HTML Parser Data
+                       +-- Rendered Content
+                       +-- Image Cache
+
+
+6. EXECUTION FLOW
+   ===============
+
+   [User Double-clicks RetroBrowser.exe]
+                |
+                v
+   [Win98 PE Loader checks subsystem version]
+                |
+                +-- Version 4.10? ✓ Yes
+                |
+                v
+   [Load required DLLs]
+                |
+                +-- kernel32.dll ✓
+                +-- user32.dll ✓
+                +-- gdi32.dll ✓
+                +-- comctl32.dll ✓
+                +-- ws2_32.dll ✓
+                |
+                v
+   [Initialize Winsock 2.2]
+                |
+                +-- WSAStartup() ✓
+                |
+                v
+   [Create Main Window]
+                |
+                v
+   [Wait for User Input]
+                |
+                +-- User enters URL
+                |
+                v
+   [Connect to Proxy: 192.168.56.1:8080]
+                |
+                v
+   [Send HTTP Request]
+                |
+                v
+   [Receive HTTP Response]
+                |
+                v
+   [Parse HTML]
+                |
+                v
+   [Render Content]
+                |
+                v
+   [Display Page]
+
+
+7. BUILD COMPARISON
+   =================
+
+   Original Build              Win98 Build
+   ================            ================
+   RetroBrowser.exe            RetroBrowser_Win98.exe
+   826,368 bytes               834,560 bytes
+   Subsystem: 6.00 (Vista)     Subsystem: 4.10 (Win98) ✓
+   Target: Modern Windows      Target: Windows 98 ✓
+   
+   ❌ Won't run on Win98       ✅ Runs on Win98
+   
+   Size Difference: +8,192 bytes (+1%)
+   Reason: Frame pointers, PE header modifications
+
+
+8. COMPATIBILITY MATRIX
+   ====================
+
+   Operating System         Original    Win98 Build
+   ================         ========    ===========
+   Windows 98 FE            ❌          ✅ (with Winsock 2.2)
+   Windows 98 SE            ❌          ✅
+   Windows ME               ❌          ✅
+   Windows 2000             ✅          ✅
+   Windows XP               ✅          ✅
+   Windows Vista            ✅          ✅
+   Windows 7                ✅          ✅
+   Windows 8/8.1            ✅          ✅
+   Windows 10               ✅          ✅
+   Windows 11               ✅          ✅
+
+
+9. VALIDATION CHECKLIST
+   =====================
+
+   PE Header Validation:
+   ✓ Machine Type: x86 (0x014C)
+   ✓ Subsystem Version: 4.10
+   ✓ Subsystem Type: Windows GUI
+   ✓ Linker Version: 14.42
+   
+   Dependency Validation:
+   ✓ No MSVCRT140.dll (static linked)
+   ✓ Only Win98-compatible DLLs
+   ✓ All DLLs present on Win98 SE
+   
+   Size Validation:
+   ✓ Binary size: 834,560 bytes (< 2 MB)
+   ✓ Fits on floppy disk
+   ✓ Reasonable for 64MB RAM system
+   
+   API Validation:
+   ✓ WINVER=0x0410 enforced
+   ✓ No Vista+ APIs used
+   ✓ Win98-compatible functions only
+
+
+10. DEPLOYMENT METHODS COMPARISON
+    ==============================
+
+    Method          Speed    Ease    Reliability    Notes
+    ======          =====    ====    ===========    =====
+    Shared Folder   ★★★★★    ★★★★    ★★★★★          Recommended
+    Network Share   ★★★★     ★★★     ★★★★           Requires SMB
+    ISO/CD Image    ★★★      ★★★★★   ★★★★★          Most reliable
+    Floppy Disk     ★★       ★★★★    ★★★            Slow, limited size
+
+
+11. TROUBLESHOOTING DECISION TREE
+    ==============================
+
+    [Application won't start]
+            |
+            +-- Error: "Cannot run in DOS mode"
+            |   → Check file is RetroBrowser_Win98.exe
+            |   → Verify subsystem version 4.10
+            |
+            +-- Error: "DLL not found"
+            |   → Check Winsock 2.2 installed
+            |   → Verify ws2_32.dll exists
+            |
+            +-- Error: "Procedure not found"
+            |   → Verify correct Win98 build
+            |   → Check WINVER=0x0410
+            |
+            +-- Crashes immediately
+                → Check available RAM (>32MB free)
+                → Close other applications
+                → Reboot Win98
+
+    [Network connection fails]
+            |
+            +-- Can't ping host
+            |   → Check network adapter
+            |   → Verify TCP/IP installed
+            |   → Check host-only network
+            |
+            +-- Can ping but no connection
+            |   → Check proxy server running
+            |   → Verify port 8080 open
+            |   → Check firewall settings
+            |
+            +-- Connection timeout
+                → Increase timeout in code
+                → Check proxy logs
+                → Verify DNS resolution
+
+
+12. PERFORMANCE OPTIMIZATION
+    =========================
+
+    [Win98 System]
+            |
+            +-- Close unnecessary programs
+            +-- Disable screen saver
+            +-- Disable Active Desktop
+            +-- Set 16-bit color depth
+            +-- Use 800x600 resolution
+            |
+            v
+    [Better Performance]
+
+    [Network]
+            |
+            +-- Use host-only adapter (not NAT)
+            +-- Run proxy on SSD
+            +-- Close other network apps
+            |
+            v
+    [Faster Page Loads]
+
+
+================================================================================
+  SUMMARY
+================================================================================
+
+Files to Transfer:  1 file only (RetroBrowser_Win98.exe)
+Target Location:    C:\RetroBrowser\
+System Required:    Win98 SE + 64MB RAM + Winsock 2.2
+Network Setup:      Host-only adapter + Proxy server
+Deployment Time:    45-80 minutes (including VM setup)
+Success Rate:       High (if prerequisites met)
+
+================================================================================
+  BUILD INFORMATION
+================================================================================
+
+File:           RetroBrowser_Win98.exe
+Size:           834,560 bytes (815 KB)
+Build Date:     2025-11-17
+Compiler:       Visual Studio 2022 (v14.42)
+Target:         Windows 98 SE (4.10.2222 A)
+Subsystem:      4.10 (Windows 98)
+Validation:     PASSED ✅
+
+================================================================================

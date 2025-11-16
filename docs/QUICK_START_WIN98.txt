@@ -1,0 +1,228 @@
+================================================================================
+  RETROBROWSER - WINDOWS 98 QUICK START GUIDE
+================================================================================
+
+1. FILES CAN CHUYEN SANG WIN98
+   ============================
+   
+   CHI CAN 1 FILE DUY NHAT:
+   
+   deploy/RetroBrowser_Win98.exe  (834,560 bytes)
+   
+   KHONG CAN:
+   - libs/ folder
+   - src/ folder  
+   - .dll files
+   - config files
+
+
+2. CAU TRUC THU MUC TREN WIN98
+   ============================
+   
+   C:\
+   └── RetroBrowser\
+       └── RetroBrowser.exe
+   
+   TRANH:
+   - C:\Program Files\... (co khoang trang)
+   - Duong dan dai
+
+
+3. YEU CAU HE THONG WIN98
+   ============================
+   
+   BAT BUOC:
+   ✓ Windows 98 SE (hoac FE + Winsock 2.2 update)
+   ✓ 64MB RAM (khuyen nghi 128MB)
+   ✓ 200MHz CPU
+   ✓ TCP/IP protocol da cai
+   ✓ Network adapter hoat dong
+   ✓ Winsock 2.2 (file ws2_32.dll trong C:\Windows\System\)
+   
+   KIEM TRA WINSOCK 2.2:
+   - Mo C:\Windows\System\
+   - Tim file ws2_32.dll
+   - Right-click → Properties → Version
+   - Phai la 4.10.1656 hoac cao hon
+   
+   NEU KHONG CO (Win98 FE):
+   - Download "Windows 98 Winsock 2 Update"
+   - Chay w98ws2setup.exe
+   - Restart Win98
+
+
+4. CAU HINH NETWORK
+   ============================
+   
+   VIRTUALBOX:
+   - VM Settings → Network
+   - Adapter 1: Host-only Adapter
+   
+   VMWARE:
+   - VM Settings → Network Adapter
+   - Network connection: Host-only
+   
+   TRONG WIN98:
+   - Control Panel → Network
+   - Phai co: TCP/IP -> [Network Adapter]
+   
+   TEST KET NOI:
+   C:\> ping 192.168.56.1
+   Phai thay "Reply from 192.168.56.1"
+
+
+5. CAC BUOC DEPLOY
+   ============================
+   
+   BUOC 1: TREN HOST MACHINE
+   -------------------------
+   cd C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project
+   cmd /c prepare_win98_deployment.bat
+   
+   BUOC 2: TRANSFER FILE
+   -------------------------
+   Phuong phap A - Shared Folder (khuyen nghi):
+   - VirtualBox: VM Settings → Shared Folders
+   - Add: deploy\win98_package → Name: RetroBrowser
+   - Trong Win98: \\VBOXSVR\RetroBrowser
+   
+   Phuong phap B - Network Share:
+   - Share folder tren host
+   - Trong Win98: \\192.168.56.1\win98_package
+   
+   Phuong phap C - ISO:
+   - Tao ISO chua RetroBrowser.exe
+   - Mount trong VM
+   - Copy tu D:\ sang C:\
+   
+   BUOC 3: TAO THU MUC TREN WIN98
+   -------------------------
+   1. Mo My Computer
+   2. Double-click C:\
+   3. File → New → Folder
+   4. Dat ten: RetroBrowser
+   5. Copy RetroBrowser.exe vao day
+   
+   BUOC 4: TAO SHORTCUT (optional)
+   -------------------------
+   1. Right-click RetroBrowser.exe
+   2. Create Shortcut
+   3. Drag ra Desktop
+
+
+6. CHAY LAN DAU
+   ============================
+   
+   BUOC 1: START PROXY TREN HOST
+   -------------------------
+   cd C:\Users\LMC\OneDrive - THS\Desktop\RetroBrowser_Project
+   python src\proxy\proxy.py
+   
+   Phai thay: "Proxy server listening on 0.0.0.0:8080"
+   
+   BUOC 2: LAUNCH RETROBROWSER
+   -------------------------
+   Double-click C:\RetroBrowser\RetroBrowser.exe
+   
+   BUOC 3: CONFIG PROXY
+   -------------------------
+   Trong RetroBrowser:
+   - Mo Settings/Options
+   - Proxy Host: 192.168.56.1
+   - Proxy Port: 8080
+   - Click Save
+   
+   BUOC 4: TEST
+   -------------------------
+   - Address bar: http://example.com
+   - Click Go
+   - Cho 5-10 giay
+   - Page se hien thi
+
+
+7. TROUBLESHOOTING
+   ============================
+   
+   LOI: "This program cannot be run in DOS mode"
+   → Verify dung file RetroBrowser_Win98.exe (834,560 bytes)
+   
+   LOI: "A required .DLL file was not found"
+   → Cai Winsock 2.2 update (Win98 FE)
+   → Check ws2_32.dll trong C:\Windows\System\
+   
+   LOI: "The procedure entry point could not be located"
+   → Verify dung RetroBrowser_Win98.exe (khong phai ban thuong)
+   
+   LOI: Network connection fails
+   → Test ping: C:\> ping 192.168.56.1
+   → Check proxy running tren host
+   → Check firewall tren host (allow port 8080)
+   → Verify proxy settings: 192.168.56.1:8080
+   
+   LOI: Application crashes
+   → Check RAM: Phai co it nhat 32MB free
+   → Close cac program khac
+   → Reboot Win98
+
+
+8. CHECKLIST TRUOC KHI CHAY
+   ============================
+   
+   TREN WIN98:
+   [ ] Windows 98 SE hoac FE + Winsock 2.2
+   [ ] RAM >= 64MB
+   [ ] TCP/IP da cai
+   [ ] Network hoat dong
+   [ ] Ping duoc 192.168.56.1
+   [ ] File RetroBrowser.exe da copy (834,560 bytes)
+   
+   TREN HOST:
+   [ ] Proxy server dang chay
+   [ ] Port 8080 khong bi block
+   [ ] Host-only adapter enable
+   [ ] IP = 192.168.56.1
+
+
+9. PERFORMANCE TIPS
+   ============================
+   
+   - Close cac program khac truoc khi chay
+   - Dung host-only adapter (nhanh hon NAT)
+   - Screen resolution: 800x600 hoac 1024x768
+   - Color depth: 16-bit (High Color)
+   - Disable screen saver
+
+
+10. TOM TAT NHANH
+    ============================
+    
+    1. Copy RetroBrowser_Win98.exe → C:\RetroBrowser\
+    2. Dam bao Winsock 2.2 (Win98 SE co san)
+    3. Config network: TCP/IP + host-only
+    4. Start proxy: python src\proxy\proxy.py
+    5. Run RetroBrowser.exe
+    6. Config proxy: 192.168.56.1:8080
+    7. Test: http://example.com
+    
+    THOI GIAN: ~45-80 phut (bao gom setup VM)
+
+
+================================================================================
+  SUPPORT
+================================================================================
+
+Chi tiet day du:
+- docs/win98_deployment_guide_vi.md (Tieng Viet)
+- docs/win98_vm_testing_instructions.md (English)
+- docs/troubleshooting.txt
+
+Build Info:
+- File: RetroBrowser_Win98.exe
+- Size: 834,560 bytes (815 KB)
+- Date: 2025-11-17
+- Subsystem: 4.10 (Windows 98)
+- Validation: PASSED ✅
+
+================================================================================
+  CHUC BAN THANH CONG! 🎉
+================================================================================
