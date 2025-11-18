@@ -627,7 +627,7 @@ Unlike traditional browsers, RetroBrowser does **not** build a hierarchical Docu
 **Trade-off**: Container tags (`<div>`, `<section>`) are discarded, only content blocks remain. This is acceptable for a text-focused browser where layout complexity is intentionally limited.
 
 ---
-## �️ Im age Handling
+## Image Handling
 
 RetroBrowser implements a sophisticated **asynchronous image loading system** optimized for Windows 98's limited resources. Images are downloaded and rendered progressively without blocking the UI thread, providing a smooth browsing experience even on 200MHz CPUs.
 
@@ -1313,23 +1313,23 @@ case BLOCK_A: {
 ```
 RetroBrowser_Project/
 ├── src/                        # Source code
-│   ├── browser/                # C++ browser (4,817 lines)
+│   ├── browser/                # C++ browser 
 │   │   ├── core/               # Main + PCH
-│   │   │   ├── main.cpp        # Orchestrator (579 lines)
+│   │   │   ├── main.cpp        # Orchestrator 
 │   │   │   ├── stdafx.h        # Precompiled header
 │   │   │   └── stdafx.cpp      # PCH implementation
-│   │   ├── ui/                 # Win32 GUI (1,015 lines)
-│   │   │   ├── ui.h            # Public API (355 lines)
-│   │   │   └── ui.cpp          # Implementation (660 lines)
-│   │   ├── network/            # HTTP client (1,204 lines)
-│   │   │   ├── network.h       # API (444 lines)
-│   │   │   └── network.cpp     # Winsock (760 lines)
-│   │   ├── parser/             # HTML parser (2,430 lines)
-│   │   │   ├── parser.h        # API (854 lines)
-│   │   │   └── parser.cpp      # FSM (1,576 lines)
-│   │   ├── renderer/           # GDI engine (1,427 lines)
-│   │   │   ├── renderer.h      # API (273 lines)
-│   │   │   └── renderer.cpp    # Rendering (1,154 lines)
+│   │   ├── ui/                 # Win32 GUI 
+│   │   │   ├── ui.h            # Public API 
+│   │   │   └── ui.cpp          # Implementation 
+│   │   ├── network/            # HTTP client 
+│   │   │   ├── network.h       # API
+│   │   │   └── network.cpp     # Winsock 
+│   │   ├── parser/             # HTML parser 
+│   │   │   ├── parser.h        # API 
+│   │   │   └── parser.cpp      # FSM 
+│   │   ├── renderer/           # GDI engine 
+│   │   │   ├── renderer.h      # API 
+│   │   │   └── renderer.cpp    # Rendering 
 │   │   └── res/                # Resources
 │   │       ├── app.ico         # Application icon
 │   │       ├── app.rc          # Resource script
@@ -1340,7 +1340,7 @@ RetroBrowser_Project/
 │       ├── config.py           # Configuration
 │       └── requirements.txt    # Dependencies
 ├── libs/                       # External libraries
-│   └── libjpeg/                # JPEG support (future)
+│   └── libjpeg/                # JPEG support 
 ├── deploy/                     # Build output
 │   ├── RetroBrowser.exe        # Standard build
 │   └── RetroBrowser_Win98.exe  # Win98-optimized build
