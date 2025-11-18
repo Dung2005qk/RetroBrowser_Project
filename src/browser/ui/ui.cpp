@@ -406,7 +406,7 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             // Per MSDN: max position = nMax - nPage + 1
             int maxPos = si.nMax - (int)si.nPage + 1;
             if (maxPos < si.nMin) maxPos = si.nMin; // Prevent negative when content < view
-            yPos = max(si.nMin, min(yPos, maxPos));
+            yPos = std::max(si.nMin, std::min(yPos, maxPos));
             
             if (yPos != si.nPos) {
                 si.fMask = SIF_POS;
@@ -436,7 +436,7 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             // Clamp to valid range with safe bounds check
             int maxPos = si.nMax - (int)si.nPage + 1;
             if (maxPos < si.nMin) maxPos = si.nMin; // Prevent negative when content < view
-            yPos = max(si.nMin, min(yPos, maxPos));
+            yPos = std::max(si.nMin, std::min(yPos, maxPos));
             
             if (yPos != si.nPos) {
                 si.fMask = SIF_POS;

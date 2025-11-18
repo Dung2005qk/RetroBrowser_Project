@@ -162,6 +162,7 @@
 #include <stdlib.h>             // Standard utilities: malloc, free, atoi, rand.
 #include <string.h>             // C string ops: strcpy, strcmp, memcpy, memset.
                                  // Still faster than std::string for fixed buffers.
+#include <stdarg.h>             // Variable argument lists: va_list, va_start, va_end
 #include <malloc.h>             // Memory allocation: _alloca (stack allocation for
                                  // temp buffers), _msize (query allocation size).
 #include <memory.h>             // Low-level memory: memcmp, memmove. Redundant with
@@ -206,10 +207,18 @@
 //--- Debug Logging ---
 #ifdef _DEBUG
     #define DEBUG_LOG(msg)      std::cout << "[DEBUG] " << msg << std::endl
-    #define DEBUG_LOGF(fmt,...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
+    // VC++ 6.0 doesn't support variadic macros well, use inline function instead
+    inline void DEBUG_LOGF(const char* fmt, ...) {
+        printf("[DEBUG] ");
+        va_list args;
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
+        printf("\n");
+    }
 #else
     #define DEBUG_LOG(msg)      ((void)0)
-    #define DEBUG_LOGF(fmt,...) ((void)0)
+    inline void DEBUG_LOGF(const char*, ...) {}
 #endif
 // RATIONALE: Zero-cost logging in release builds (optimized away). Console
 // output requires AllocConsole() in WinMain for _DEBUG builds. Alternative:
@@ -227,7 +236,7 @@
 // RATIONALE: IE5 user-agent ensures maximum compatibility with retro websites
 // and proxy server expectations. Modern sites may reject but that's out-of-scope.
 
-#define PROXY_DEFAULT_HOST      "127.0.0.1"
+#define PROXY_DEFAULT_HOST      "192.168.56.1"
 #define PROXY_DEFAULT_PORT      8080
 // NOTE: Proxy runs on host machine, VM connects via host-only network. Adjust
 // IP in config if using bridged/NAT networking instead.

@@ -90,7 +90,9 @@ REM   WINVER=0x0410          - Target Windows 98 (4.10) API level
 REM   _WIN32_WINNT=0x0410    - Target NT 4.0 API level
 REM   _WIN32_WINDOWS=0x0410  - Explicitly target Windows 9x family version 4.10
 REM   _WIN32_IE=0x0500       - Target Internet Explorer 5.0 (shipped with Win98 SE)
-set WIN98_DEFINES=/D WIN32 /D _WINDOWS /D _MBCS /D WINVER=0x0410 /D _WIN32_WINNT=0x0410 /D _WIN32_WINDOWS=0x0410 /D _WIN32_IE=0x0500
+REM   _USE_32BIT_TIME_T      - Force 32-bit time_t (Win98 compatible)
+REM   NO_OLDNAMES            - Avoid deprecated POSIX names
+set WIN98_DEFINES=/D WIN32 /D _WINDOWS /D _MBCS /D WINVER=0x0410 /D _WIN32_WINNT=0x0410 /D _WIN32_WINDOWS=0x0410 /D _WIN32_IE=0x0500 /D _USE_32BIT_TIME_T
 
 REM Compiler optimization and code generation flags
 REM   /MT      - Static link CRT (no MSVCRT.DLL dependency - critical for Win98)

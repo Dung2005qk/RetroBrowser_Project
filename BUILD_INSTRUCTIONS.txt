@@ -1,0 +1,35 @@
+HƯỚNG DẪN BUILD TRÊN WINDOWS 98
+================================
+
+VẤN ĐỀ: "Out of environment space"
+NGUYÊN NHÂN: DOS environment mặc định quá nhỏ (256 bytes)
+
+GIẢI PHÁP 1: Sửa CONFIG.SYS (KHUYẾN NGHỊ)
+-----------------------------------------
+1. Mở Notepad
+2. Mở file C:\CONFIG.SYS
+3. Thêm hoặc sửa dòng:
+   SHELL=C:\COMMAND.COM /E:4096 /P
+4. Lưu file
+5. Khởi động lại máy
+
+GIẢI PHÁP 2: Chạy file b.bat
+----------------------------
+File b.bat đã được tạo với lệnh ngắn gọn:
+   b.bat
+
+GIẢI PHÁP 3: Tạo shortcut với environment lớn
+----------------------------------------------
+1. Click phải vào Desktop
+2. New > Shortcut
+3. Command line: C:\COMMAND.COM
+4. Click phải vào shortcut > Properties
+5. Memory tab > Initial environment: 4096
+6. Chạy DOS từ shortcut này
+7. Chạy build.bat
+
+GIẢI PHÁP 4: Chạy thủ công
+--------------------------
+Trong DOS prompt:
+   cd C:\RetroBrowser
+   C:\PROGRA~1\MICROS~1\VC98\Bin\cl.exe /nologo /MT /O2 src\browser\core\main.cpp

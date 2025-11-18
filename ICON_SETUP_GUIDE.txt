@@ -1,0 +1,77 @@
+========================================
+HƯỚNG DẪN TẠO ICON VÀ CURSOR
+========================================
+
+CÁCH 1: Tự động (Khuyến nghị)
+------------------------------
+1. Trên Windows 11, mở Command Prompt
+2. Chạy: create_icons_win11.bat
+3. Script sẽ tự động:
+   - Tạo thư mục src\browser\res
+   - Copy notepad.exe thành app.ico
+   - Copy aero_link.cur thành hand.cur
+4. Xong! Bây giờ copy toàn bộ folder src sang Win98
+
+CÁCH 2: Thủ công (Nếu script không chạy)
+-----------------------------------------
+Trên Windows 11:
+
+Bước 1: Tạo thư mục
+   - Mở thư mục dự án RetroBrowser
+   - Tạo thư mục: src\browser\res (nếu chưa có)
+
+Bước 2: Tạo app.ico
+   - Mở File Explorer
+   - Duyệt đến: C:\Windows\System32\
+   - Tìm file: notepad.exe
+   - Copy file này
+   - Paste vào: src\browser\res\
+   - Rename thành: app.ico
+
+Bước 3: Tạo hand.cur
+   - Duyệt đến: C:\Windows\Cursors\
+   - Tìm file: aero_link.cur (hoặc hand.cur)
+   - Copy file này
+   - Paste vào: src\browser\res\
+   - Rename thành: hand.cur
+
+Bước 4: Kiểm tra
+   - Đảm bảo có 2 file:
+     ✓ src\browser\res\app.ico
+     ✓ src\browser\res\hand.cur
+
+Bước 5: Copy sang Win98
+   - Copy toàn bộ folder src sang Win98 VM
+   - Đảm bảo cấu trúc thư mục giống hệt:
+     F:\src\browser\res\app.ico
+     F:\src\browser\res\hand.cur
+
+========================================
+SAU KHI HOÀN THÀNH
+========================================
+Trên Win98:
+1. Mở Visual Studio 6.0
+2. Mở project RetroBrowser
+3. Build → Build RetroBrowser.exe
+4. Lỗi RC2135 sẽ biến mất!
+
+========================================
+LƯU Ý QUAN TRỌNG
+========================================
+- File .ico và .cur là file binary, KHÔNG phải text
+- Phải copy bằng binary mode (Windows tự động làm)
+- Nếu dùng shared folder VirtualBox, file sẽ tự sync
+- Nếu lỗi vẫn còn, kiểm tra đường dẫn trong app.rc
+
+========================================
+TROUBLESHOOTING
+========================================
+Nếu vẫn lỗi "file not found":
+1. Kiểm tra đường dẫn trong app.rc (dòng 18, 21)
+2. Đảm bảo đường dẫn là: res\app.ico (không phải src\browser\res\app.ico)
+3. Resource compiler tìm file relative từ vị trí của app.rc
+
+Nếu lỗi "invalid format":
+1. File icon bị corrupt khi copy
+2. Thử copy lại bằng cách khác
+3. Hoặc dùng icon editor để tạo icon mới

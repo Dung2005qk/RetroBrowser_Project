@@ -93,13 +93,11 @@ static DWORD WINAPI ImageLoadThreadProc(LPVOID lpParam)
         
         if (GetTempPathA(MAX_PATH, tempPath) > 0) {
             if (GetTempFileNameA(tempPath, "img", 0, tempFile) != 0) {
-                // Write image data to temp file
-                HANDLE hFile = CreateFileA(tempFile, GENERIC_WRITE, 0, NULL,
-                                          CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-                if (hFile != INVALID_HANDLE_VALUE) {
-                    DWORD written = 0;
-                    WriteFile(hFile, resp.body.data(), (DWORD)resp.body.size(), &written, NULL);
-                    CloseHandle(hFile);
+                // Write image data to temp file using C FILE* (avoids SetFilePointerEx)
+                FILE* fp = fopen(tempFile, "wb");
+                if (fp != NULL) {
+                    fwrite(resp.body.data(), 1, resp.body.size(), fp);
+                    fclose(fp);
                     
                     // Try to load as bitmap
                     hBitmap = (HBITMAP)LoadImageA(NULL, tempFile, IMAGE_BITMAP,
