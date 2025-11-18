@@ -627,7 +627,7 @@ Unlike traditional browsers, RetroBrowser does **not** build a hierarchical Docu
 **Trade-off**: Container tags (`<div>`, `<section>`) are discarded, only content blocks remain. This is acceptable for a text-focused browser where layout complexity is intentionally limited.
 
 ---
-## �️ Im age Handling
+## Image Handling
 
 RetroBrowser implements a sophisticated **asynchronous image loading system** optimized for Windows 98's limited resources. Images are downloaded and rendered progressively without blocking the UI thread, providing a smooth browsing experience even on 200MHz CPUs.
 
