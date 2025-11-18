@@ -15,10 +15,10 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // ICONS AND CURSORS
 // ============================================================================
 
-IDI_APP_ICON ICON "res\\app.ico"
+IDI_APP_ICON ICON "app.ico"
 // Icon chính của ứng dụng (16x16 + 32x32, 16-color)
 
-IDC_HAND_CURSOR CURSOR "res\\hand.cur"
+IDC_HAND_CURSOR CURSOR "hand.cur"
 // Con trỏ tay cho hyperlinks (tính năng tùy chọn)
 
 // ============================================================================

@@ -55,6 +55,10 @@
                                  // Strips additional OLE/COM bloat not needed for
                                  // pure Win32 development. Complements LEAN_AND_MEAN.
 
+#define NOMINMAX                // Prevent windows.h from defining min/max macros
+                                 // that conflict with std::min/std::max from <algorithm>.
+                                 // CRITICAL: Must precede <windows.h> include.
+
 #define STRICT                  // Enable strict type checking for handles.
                                  // Forces distinct types for HWND, HDC, HBITMAP, etc.
                                  // Catches errors like passing HWND to HDC parameter.
