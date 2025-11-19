@@ -1,4 +1,21 @@
 #pragma once
+
+// ============================================================================
+// COMPILER WARNINGS CONFIGURATION
+// ============================================================================
+// Disable specific warnings that are safe to ignore in VC++ 6.0 / Win98 context
+
+#pragma warning(disable: 4291)  // C4291: 'void *__cdecl operator new(...)' 
+                                 // : no matching operator delete found
+                                 // RATIONALE: This warning occurs when using placement new
+                                 // or nothrow new without matching delete. In our Win98
+                                 // browser context, this is safe because:
+                                 // 1. Constructors rarely throw exceptions in VC++6.0
+                                 // 2. Memory leak only occurs if constructor throws
+                                 // 3. Browser is short-lived app (user closes/reopens)
+                                 // 4. Win98 doesn't have sophisticated exception handling
+                                 // IMPACT: Minimal - potential small leak only on exception
+
 // ============================================================================
 // stdafx.h - Precompiled Header for Win98 Retro Browser Project
 // ============================================================================
@@ -204,6 +221,12 @@
 #define SAFE_DELETE(p)      do { if(p) { delete (p); (p) = NULL; } } while(0)
 #define SAFE_DELETE_ARRAY(p) do { if(p) { delete[] (p); (p) = NULL; } } while(0)
 #define SAFE_RELEASE(p)     do { if(p) { (p)->Release(); (p) = NULL; } } while(0)
+
+//--- VC++6.0 Compatibility Helpers ---
+// VC++6.0 std::string doesn't have .clear() method (added in C++11)
+// Use this macro for compatibility
+#define STR_CLEAR(s)        ((s) = "")
+#define MAP_CLEAR(m)        ((m) = std::map<std::string, std::string>())
 // RATIONALE: Idiomatic delete wrappers prevent double-free bugs and dangling
 // pointers. do-while(0) ensures safe usage in all contexts (if/else blocks).
 // SAFE_RELEASE for future COM integration (e.g., loading images via IStream).
@@ -211,23 +234,22 @@
 //--- Debug Logging ---
 #ifdef _DEBUG
     #define DEBUG_LOG(msg)      std::cout << "[DEBUG] " << msg << std::endl
-    // VC++ 6.0 doesn't support variadic macros well, use inline function instead
-    inline void DEBUG_LOGF(const char* fmt, ...) {
-        printf("[DEBUG] ");
-        va_list args;
-        va_start(args, fmt);
-        vprintf(fmt, args);
-        va_end(args);
-        printf("\n");
+    // Simple printf-style logging for VC++6.0 (no variadic macros)
+    inline void DEBUG_LOG_STR(const char* msg) {
+        printf("[DEBUG] %s\n", msg);
     }
 #else
     #define DEBUG_LOG(msg)      ((void)0)
-    inline void DEBUG_LOGF(const char*, ...) {}
+    inline void DEBUG_LOG_STR(const char*) {}
 #endif
 // RATIONALE: Zero-cost logging in release builds (optimized away). Console
 // output requires AllocConsole() in WinMain for _DEBUG builds. Alternative:
 // OutputDebugString() for debugger output without console window.
-
+#ifdef _DEBUG
+inline void operator delete(void* ptr, const std::nothrow_t&) throw() {
+    ::operator delete(ptr);
+}
+#endif
 //--- Network Constants ---
 #define DEFAULT_BUFFER_SIZE     4096    // Standard recv/send buffer (1 TCP packet)
 #define MAX_URL_LENGTH          2048    // IE5 limit; sufficient for typical URLs

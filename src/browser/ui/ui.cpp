@@ -31,7 +31,7 @@
 
 // --- Internal State ---
 // Encapsulates all module-level state variables into a single struct for clarity.
-static struct UIState {
+typedef struct UIState {
     HINSTANCE                   hInstance;
     HWND                        hMainWnd;
     HWND                        hAddressBar;
@@ -43,7 +43,10 @@ static struct UIState {
     Renderer::HtmlRenderer*     pRenderer;     // Renderer instance - full encapsulation
     HFONT                       hDefaultFont;
     BOOL                        isLoading;
-} g_State = {};
+} UIState;
+
+// VC++6.0: Initialize global state explicitly (no = {} syntax)
+static UIState g_State;
 
 // --- Helper Function Forward Declarations ---
 static void CreateControls(HWND hParent);
@@ -59,6 +62,9 @@ static WNDPROC g_pfnOldAddressProc = NULL;
 // ============================================================================
 
 BOOL UI_Init(HINSTANCE hInstance, const UI_CALLBACKS* pCallbacks) {
+    // VC++6.0: Zero-initialize global state manually
+    memset(&g_State, 0, sizeof(g_State));
+    
     // Store instance handle and callbacks, validate parameters.
     if (!hInstance || !pCallbacks) return FALSE;
     g_State.hInstance = hInstance;
@@ -406,7 +412,9 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             // Per MSDN: max position = nMax - nPage + 1
             int maxPos = si.nMax - (int)si.nPage + 1;
             if (maxPos < si.nMin) maxPos = si.nMin; // Prevent negative when content < view
-            yPos = std::max(si.nMin, std::min(yPos, maxPos));
+            // VC++6.0: Use manual min/max instead of std::min/max
+            if (yPos < si.nMin) yPos = si.nMin;
+            if (yPos > maxPos) yPos = maxPos;
             
             if (yPos != si.nPos) {
                 si.fMask = SIF_POS;
@@ -424,7 +432,8 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             // Handle mouse wheel scrolling (smooth scrolling).
             if (!g_State.pRenderer) return 0;
             
-            int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+            // VC++6.0/Win98: GET_WHEEL_DELTA_WPARAM not defined, extract manually
+            int delta = (short)HIWORD(wParam);
             
             SCROLLINFO si = { sizeof(SCROLLINFO) };
             si.fMask = SIF_ALL;
@@ -436,7 +445,9 @@ LRESULT CALLBACK UI_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             // Clamp to valid range with safe bounds check
             int maxPos = si.nMax - (int)si.nPage + 1;
             if (maxPos < si.nMin) maxPos = si.nMin; // Prevent negative when content < view
-            yPos = std::max(si.nMin, std::min(yPos, maxPos));
+            // VC++6.0: Use manual min/max instead of std::min/max
+            if (yPos < si.nMin) yPos = si.nMin;
+            if (yPos > maxPos) yPos = maxPos;
             
             if (yPos != si.nPos) {
                 si.fMask = SIF_POS;

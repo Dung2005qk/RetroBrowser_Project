@@ -227,7 +227,7 @@ namespace Parser
                                     result.blocks.push_back(block);
                                 }
                             }
-                            textBuffer.clear();
+                            textBuffer = "";
                         }
                         currentState = STATE_TAG_OPEN;
                     }
@@ -246,7 +246,7 @@ namespace Parser
                     if (c == '/')
                     {
                         isClosingTag = true;
-                        tagName.clear();
+                        tagName = "";
                         currentState = STATE_TAG_NAME;
                     }
                     else if (c == '!')
@@ -271,7 +271,7 @@ namespace Parser
                     else if (IsAlpha(c))
                     {
                         isClosingTag = false;
-                        tagName.clear();
+                        tagName = "";
                         tagName += ToLower(c);
                         currentState = STATE_TAG_NAME;
                     }
@@ -309,7 +309,7 @@ namespace Parser
                             }
                         }
                         currentState = STATE_BEFORE_ATTR_NAME;
-                        attributes.clear();
+                        attributes = std::map<std::string, std::string>();
                     }
                     else if (c == '>')
                     {
@@ -341,12 +341,12 @@ namespace Parser
                                     
                                     // Reset container state
                                     containerType = BLOCK_UNKNOWN;
-                                    containerContent.clear();
-                                    containerAttrs.clear();
+                                    containerContent = "";
+                                    containerAttrs = std::map<std::string, std::string>();
                                 }
                             }
                             isClosingTag = false;
-                            tagName.clear();
+                            tagName = "";
                             currentState = STATE_DATA;
                         }
                         else
@@ -371,7 +371,7 @@ namespace Parser
                             {
                                 // Start container - wait for text content and closing tag
                                 containerType = type;
-                                containerContent.clear();
+                                containerContent = "";
                                 containerAttrs = attributes;
                             }
                             else if (isContainer && containerType != BLOCK_UNKNOWN)
@@ -415,7 +415,7 @@ namespace Parser
                                     
                                     // Start new container
                                     containerType = type;
-                                    containerContent.clear();
+                                    containerContent = "";
                                     containerAttrs = attributes;
                                 }
                             }
@@ -447,8 +447,8 @@ namespace Parser
                                 FinalizeAndAddBlock(tagName, attributes, result);
                             }
                             
-                            tagName.clear();
-                            attributes.clear();
+                            tagName = "";
+                            attributes = std::map<std::string, std::string>();
                             currentState = STATE_DATA;
                         }
                     }
@@ -482,7 +482,7 @@ namespace Parser
                         {
                             // Start container - wait for text content and closing tag
                             containerType = type;
-                            containerContent.clear();
+                            containerContent = "";
                             containerAttrs = attributes;
                         }
                         else if (isContainer && containerType != BLOCK_UNKNOWN)
@@ -515,7 +515,7 @@ namespace Parser
                                 result.blocks.push_back(block);
                                 
                                 containerType = type;
-                                containerContent.clear();
+                                containerContent = "";
                                 containerAttrs = attributes;
                             }
                         }
@@ -541,8 +541,8 @@ namespace Parser
                             FinalizeAndAddBlock(tagName, attributes, result);
                         }
                         
-                        tagName.clear();
-                        attributes.clear();
+                        tagName = "";
+                        attributes = std::map<std::string, std::string>();
                         currentState = STATE_DATA;
                     }
                     else if (c == '/')
@@ -551,7 +551,7 @@ namespace Parser
                     }
                     else if (!IsWhitespace(c) && IsAlpha(c))
                     {
-                        attrKey.clear();
+                        attrKey = "";
                         attrKey += ToLower(c);
                         currentState = STATE_ATTR_NAME;
                     }
@@ -583,8 +583,8 @@ namespace Parser
                         
                         // Tag complete - create and add block using helper (DRY principle)
                         FinalizeAndAddBlock(tagName, attributes, result);
-                        tagName.clear();
-                        attributes.clear();
+                        tagName = "";
+                        attributes = std::map<std::string, std::string>();
                         currentState = STATE_DATA;
                     }
                     break;
@@ -605,7 +605,7 @@ namespace Parser
                         attributes[attrKey] = "";
                         if (IsAlpha(c))
                         {
-                            attrKey.clear();
+                            attrKey = "";
                             attrKey += ToLower(c);
                             currentState = STATE_ATTR_NAME;
                         }
@@ -613,8 +613,8 @@ namespace Parser
                         {
                             // Tag complete - create and add block using helper (DRY principle)
                             FinalizeAndAddBlock(tagName, attributes, result);
-                            tagName.clear();
-                            attributes.clear();
+                            tagName = "";
+                            attributes = std::map<std::string, std::string>();
                             currentState = STATE_DATA;
                         }
                     }
@@ -628,17 +628,17 @@ namespace Parser
                 {
                     if (c == '"')
                     {
-                        attrValue.clear();
+                        attrValue = "";
                         currentState = STATE_ATTR_VALUE_DOUBLE_QUOTED;
                     }
                     else if (c == '\'')
                     {
-                        attrValue.clear();
+                        attrValue = "";
                         currentState = STATE_ATTR_VALUE_SINGLE_QUOTED;
                     }
                     else if (!IsWhitespace(c) && c != '>')
                     {
-                        attrValue.clear();
+                        attrValue = "";
                         attrValue += c;
                         currentState = STATE_ATTR_VALUE_UNQUOTED;
                     }
@@ -650,8 +650,8 @@ namespace Parser
                         
                         // Tag complete - create and add block using helper (DRY principle)
                         FinalizeAndAddBlock(tagName, attributes, result);
-                        tagName.clear();
-                        attributes.clear();
+                        tagName = "";
+                        attributes = std::map<std::string, std::string>();
                         currentState = STATE_DATA;
                     }
                     break;
@@ -707,8 +707,8 @@ namespace Parser
                         
                         // Tag complete - create and add block using helper (DRY principle)
                         FinalizeAndAddBlock(tagName, attributes, result);
-                        tagName.clear();
-                        attributes.clear();
+                        tagName = "";
+                        attributes = std::map<std::string, std::string>();
                         currentState = STATE_DATA;
                     }
                     else
@@ -759,7 +759,7 @@ namespace Parser
                                 if (skipDepth == 0)
                                 {
                                     currentState = STATE_DATA;
-                                    skipTagName.clear();
+                                    skipTagName = "";
                                 }
                             }
                         }

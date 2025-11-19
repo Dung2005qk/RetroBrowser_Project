@@ -96,7 +96,10 @@ static DWORD WINAPI ImageLoadThreadProc(LPVOID lpParam)
                 // Write image data to temp file using C FILE* (avoids SetFilePointerEx)
                 FILE* fp = fopen(tempFile, "wb");
                 if (fp != NULL) {
-                    fwrite(resp.body.data(), 1, resp.body.size(), fp);
+                    // Use &vector[0] instead of .data() for VC++6.0 compatibility
+                    if (!resp.body.empty()) {
+                        fwrite(&resp.body[0], 1, resp.body.size(), fp);
+                    }
                     fclose(fp);
                     
                     // Try to load as bitmap
@@ -398,12 +401,12 @@ void OnNavigate(const TCHAR* pszUrl)
     UI_SetStatusText(_T("Parsing HTML..."));
     
     // DEBUG: Log HTML size received from proxy
-    DEBUG_LOGF("Received HTML from proxy: %d bytes", resp.body.size());
+    // DEBUG_LOGF removed for VC++6.0 compatibility
     
     parseResult = g_parser.Parse(resp.body);
     
     // DEBUG: Log parse results
-    DEBUG_LOGF("Parse status: %d, Blocks parsed: %d", parseResult.status, parseResult.blocks.size());
+    // DEBUG_LOGF removed for VC++6.0 compatibility
     
     // --- Handle Parse Errors ---
     if (parseResult.status != Parser::PARSE_SUCCESS) {

@@ -202,8 +202,8 @@ void HtmlRenderer::SetContent(const std::vector<Parser::HtmlBlock>& blocks)
     }
     
     // Invalidate layout
-    m_displayList.clear();
-    m_clickableAreas.clear();
+    m_displayList = std::vector<RenderItem>();
+    m_clickableAreas = std::vector<ClickableArea>();
     m_layoutDirty = true;
     
     // Reset scroll to top
@@ -211,11 +211,11 @@ void HtmlRenderer::SetContent(const std::vector<Parser::HtmlBlock>& blocks)
     
     // Evict unreferenced images from cache
     std::set<std::string> referencedImages;
-    for (size_t i = 0; i < m_blocks.size(); ++i) {
-        if (m_blocks[i].type == Parser::BLOCK_IMG) {
+    for (size_t j = 0; j < m_blocks.size(); ++j) {
+        if (m_blocks[j].type == Parser::BLOCK_IMG) {
             std::map<std::string, std::string>::const_iterator it = 
-                m_blocks[i].attributes.find("src");
-            if (it != m_blocks[i].attributes.end()) {
+                m_blocks[j].attributes.find("src");
+            if (it != m_blocks[j].attributes.end()) {
                 referencedImages.insert(it->second);
             }
         }
@@ -273,8 +273,8 @@ void HtmlRenderer::CalculateLayout(HWND hwnd, const RECT& clientRect)
     }
     
     // Clear previous layout
-    m_displayList.clear();
-    m_clickableAreas.clear();
+    m_displayList = std::vector<RenderItem>();
+    m_clickableAreas = std::vector<ClickableArea>();
     m_displayList.reserve(m_blocks.size());
     m_clickableAreas.reserve(50);
     
@@ -763,8 +763,8 @@ void HtmlRenderer::ReleaseGdiResources()
             DeleteObject(it->second);
         }
     }
-    m_imageCache.clear();
-    m_imageCacheLRU.clear();
+    m_imageCache = std::map<std::string, HBITMAP>();
+    m_imageCacheLRU = std::vector<std::string>();
     
     // Delete offscreen buffer
     if (m_memDC) {

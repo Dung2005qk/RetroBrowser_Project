@@ -93,7 +93,7 @@ namespace Network
         
         if (result != 0) {
             // WSAStartup failed - no network stack available
-            DEBUG_LOGF("WSAStartup failed with error: %d", result);
+            // DEBUG_LOG removed for VC++6.0 compat
             return;  // m_initialized remains false
         }
         
@@ -101,16 +101,14 @@ namespace Network
         // RATIONALE: Winsock may return a higher version if available, but we
         //            want to ensure at least 2.2 for getaddrinfo and other APIs
         if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
-            DEBUG_LOGF("Winsock version mismatch: got %d.%d, expected 2.2",
-                       LOBYTE(wsaData.wVersion), HIBYTE(wsaData.wVersion));
+            // DEBUG_LOGF removed for VC++6.0 compat
             WSACleanup();  // Release the incompatible version
             return;  // m_initialized remains false
         }
         
         // Success: Winsock 2.2 is ready
         m_initialized = true;
-        DEBUG_LOGF("Winsock 2.2 initialized successfully (Proxy: %s:%d)",
-                   m_proxyHost.c_str(), m_proxyPort);
+        // DEBUG_LOGF removed for VC++6.0 compat
     }
 
     // ========================================================================
@@ -124,7 +122,7 @@ namespace Network
     {
         if (m_initialized) {
             WSACleanup();
-            DEBUG_LOG("Winsock cleaned up");
+            // DEBUG: Winsock cleaned up
         }
     }
 
@@ -145,7 +143,7 @@ namespace Network
     {
         m_proxyHost = host;
         m_proxyPort = port;
-        DEBUG_LOGF("Proxy updated to %s:%d", host.c_str(), port);
+        // DEBUG_LOGF removed for VC++6.0 compat
     }
 
     // ========================================================================
@@ -188,7 +186,7 @@ namespace Network
         if (!m_initialized) {
             resp.status = WINSOCK_INIT_FAILED;
             resp.errorMessage = "Winsock not initialized - check WSAStartup logs";
-            DEBUG_LOG("FetchUrl called but Winsock not initialized");
+            // DEBUG: FetchUrl called but Winsock not initialized
             return resp;
         }
         
@@ -197,7 +195,7 @@ namespace Network
         if (url.find("http://") != 0) {
             resp.status = INVALID_URL;
             resp.errorMessage = "URL must start with 'http://' (HTTPS not supported - proxy handles it)";
-            DEBUG_LOGF("Invalid URL scheme: %s", url.c_str());
+            // DEBUG_LOGF removed for VC++6.0 compat
             return resp;
         }
         
@@ -207,11 +205,11 @@ namespace Network
             ss << "URL exceeds maximum length (" << MAX_URL_LENGTH 
                << " chars). Current length: " << url.length();
             resp.errorMessage = ss.str();
-            DEBUG_LOGF("URL too long: %d chars", url.length());
+            // DEBUG_LOGF removed for VC++6.0 compat
             return resp;
         }
         
-        DEBUG_LOGF("Fetching URL: %s", url.c_str());
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 2 & 3: CONNECT TO PROXY
@@ -245,13 +243,13 @@ namespace Network
         setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, 
                    reinterpret_cast<const char*>(&timeout), sizeof(timeout));
         
-        DEBUG_LOGF("Socket timeouts set to %d ms", HTTP_TIMEOUT_MS);
+        // DEBUG_LOG removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 4: BUILD HTTP REQUEST
         // ====================================================================
         std::string request = BuildRequest(url);
-        DEBUG_LOGF("Built request (%d bytes)", request.size());
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 5: SEND REQUEST TO PROXY
@@ -278,11 +276,11 @@ namespace Network
             }
             
             resp.errorMessage = ss.str();
-            DEBUG_LOGF("send() failed: %d", err);
+            // DEBUG_LOGF removed for VC++6.0 compat
             return resp;
         }
         
-        DEBUG_LOGF("Sent %d bytes successfully", sent);
+        // DEBUG_LOG removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 6: RECEIVE RESPONSE FROM PROXY
@@ -294,18 +292,18 @@ namespace Network
         
         // ALWAYS close socket after use (no HTTP keep-alive in our simple impl)
         closesocket(sock);
-        DEBUG_LOG("Socket closed");
+        // DEBUG: Socket closed
         
         // Check if we received any data
         if (rawData.empty()) {
             resp.status = RECV_FAILED;
             resp.errorMessage = "No data received from proxy. "
                                 "Proxy may have crashed or closed connection immediately.";
-            DEBUG_LOG("No data received");
+            // DEBUG: No data received
             return resp;
         }
         
-        DEBUG_LOGF("Received total %d bytes", rawData.size());
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 7: PARSE RESPONSE
@@ -336,11 +334,11 @@ namespace Network
         
         if (sock == INVALID_SOCKET) {
             int err = WSAGetLastError();
-            DEBUG_LOGF("socket() failed with error: %d", err);
+            // DEBUG_LOGF removed for VC++6.0 compat
             return INVALID_SOCKET;
         }
         
-        DEBUG_LOG("TCP socket created");
+        // DEBUG: TCP socket created
         
         // ====================================================================
         // STEP 2: RESOLVE PROXY HOSTNAME
@@ -354,17 +352,16 @@ namespace Network
             int err = WSAGetLastError();
             closesocket(sock);  // Clean up socket before returning
             
-            DEBUG_LOGF("gethostbyname('%s') failed with error: %d", 
-                       m_proxyHost.c_str(), err);
+            // DEBUG_LOGF removed for VC++6.0 compat
             
             if (err == WSAHOST_NOT_FOUND) {
-                DEBUG_LOG("Host not found - check hostname spelling");
+                // DEBUG: Host not found - check hostname spelling
             }
             
             return INVALID_SOCKET;
         }
         
-        DEBUG_LOGF("Resolved %s", m_proxyHost.c_str());
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 3: POPULATE sockaddr_in STRUCTURE
@@ -386,22 +383,21 @@ namespace Network
             int err = WSAGetLastError();
             closesocket(sock);  // Clean up socket before returning
             
-            DEBUG_LOGF("connect() to %s:%d failed with error: %d", 
-                       m_proxyHost.c_str(), m_proxyPort, err);
+            // DEBUG_LOGF removed for VC++6.0 compat
             
             // Provide user-friendly error hints
             if (err == WSAECONNREFUSED) {
-                DEBUG_LOG("Connection refused - proxy may not be running");
+                // DEBUG: Connection refused - proxy may not be running
             } else if (err == WSAETIMEDOUT) {
-                DEBUG_LOG("Connection timeout - check network/firewall");
+                // DEBUG: Connection timeout - check network/firewall
             } else if (err == WSAENETUNREACH) {
-                DEBUG_LOG("Network unreachable - check VM network adapter");
+                // DEBUG: Network unreachable - check VM network adapter
             }
             
             return INVALID_SOCKET;
         }
         
-        DEBUG_LOGF("Connected to proxy %s:%d", m_proxyHost.c_str(), m_proxyPort);
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         return sock;
     }
@@ -472,7 +468,7 @@ namespace Network
         ss << "\r\n";
         
         std::string request = ss.str();
-        DEBUG_LOGF("Built request:\n%s", request.c_str());
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         return request;
     }
@@ -505,7 +501,7 @@ namespace Network
             // Append received chunk to data vector
             data.insert(data.end(), buffer, buffer + bytes);
             
-            DEBUG_LOGF("Received chunk: %d bytes", bytes);
+            // DEBUG_LOG removed for VC++6.0 compat
             
             // ================================================================
             // SAFETY CHECK: Enforce 1MB limit
@@ -515,7 +511,7 @@ namespace Network
             //            memory. 1MB is generous for text/HTML but protects
             //            against malicious or buggy proxy responses.
             if (data.size() > 1048576) {  // 1MB = 1024 * 1024
-                DEBUG_LOG("WARNING: Response exceeds 1MB limit, stopping recv");
+                // DEBUG: WARNING: Response exceeds 1MB limit, stopping recv
                 break;
             }
         }
@@ -525,18 +521,18 @@ namespace Network
         // ====================================================================
         if (bytes == SOCKET_ERROR) {
             int err = WSAGetLastError();
-            DEBUG_LOGF("recv() failed with error: %d", err);
+            // DEBUG_LOGF removed for VC++6.0 compat
             
             if (err == WSAETIMEDOUT) {
-                DEBUG_LOG("Receive timeout - slow proxy or large response");
+                // DEBUG: Receive timeout - slow proxy or large response
             } else if (err == WSAECONNRESET) {
-                DEBUG_LOG("Connection reset by proxy");
+                // DEBUG: Connection reset by proxy
             }
         } else if (bytes == 0) {
-            DEBUG_LOG("Connection closed by proxy (graceful)");
+            // DEBUG: Connection closed by proxy (graceful)
         }
         
-        DEBUG_LOGF("Total received: %d bytes", data.size());
+        // DEBUG_LOGF removed for VC++6.0 compat
     }
 
     // ========================================================================
@@ -586,7 +582,7 @@ namespace Network
         if (headersEnd == std::string::npos) {
             resp.status = RESPONSE_PARSE_FAILED;
             resp.errorMessage = "Malformed response: no header/body separator (\\r\\n\\r\\n) found";
-            DEBUG_LOG("Parse failed: missing header/body separator");
+            // DEBUG: Parse failed: missing header/body separator
             return resp;
         }
         
@@ -600,7 +596,7 @@ namespace Network
         if (!std::getline(ss, statusLine)) {
             resp.status = RESPONSE_PARSE_FAILED;
             resp.errorMessage = "Empty response headers";
-            DEBUG_LOG("Parse failed: empty headers");
+            // DEBUG: Parse failed: empty headers
             return resp;
         }
         
@@ -609,7 +605,7 @@ namespace Network
             statusLine.erase(statusLine.length() - 1);
         }
         
-        DEBUG_LOGF("Status line: %s", statusLine.c_str());
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         // Parse status line: "HTTP/1.1 200 OK"
         //                     ^       ^   ^
@@ -622,14 +618,14 @@ namespace Network
         if (space1 == std::string::npos || space2 == std::string::npos) {
             resp.status = RESPONSE_PARSE_FAILED;
             resp.errorMessage = "Invalid status line format (expected 'HTTP/1.x CODE REASON')";
-            DEBUG_LOG("Parse failed: invalid status line");
+            // DEBUG: Parse failed: invalid status line
             return resp;
         }
         
         std::string codeStr = statusLine.substr(space1 + 1, space2 - space1 - 1);
         resp.httpStatusCode = atoi(codeStr.c_str());
         
-        DEBUG_LOGF("HTTP status code: %d", resp.httpStatusCode);
+        // DEBUG_LOG removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 4: Parse headers line by line
@@ -649,7 +645,7 @@ namespace Network
             // Parse header: "Key: Value"
             size_t colon = line.find(':');
             if (colon == std::string::npos) {
-                DEBUG_LOGF("Skipping malformed header: %s", line.c_str());
+                // DEBUG_LOGF removed for VC++6.0 compat
                 continue;
             }
             
@@ -676,7 +672,7 @@ namespace Network
             std::transform(key.begin(), key.end(), key.begin(), tolower);
             
             resp.headers[key] = val;
-            DEBUG_LOGF("Header: %s = %s", key.c_str(), val.c_str());
+            // DEBUG_LOGF removed for VC++6.0 compat
         }
         
         // ====================================================================
@@ -685,7 +681,7 @@ namespace Network
         // Body starts after "\r\n\r\n" (4 bytes past headersEnd)
         resp.body.assign(rawData.begin() + headersEnd + 4, rawData.end());
         
-        DEBUG_LOGF("Body size: %d bytes", resp.body.size());
+        // DEBUG_LOGF removed for VC++6.0 compat
         
         // ====================================================================
         // STEP 6: Validate Content-Length (if present)
@@ -707,8 +703,7 @@ namespace Network
                       << "Response may be truncated or corrupted.";
                 resp.errorMessage = errss.str();
                 
-                DEBUG_LOGF("Content-Length mismatch: expected %d, got %d",
-                           expectedLength, resp.body.size());
+                // DEBUG_LOGF removed for VC++6.0 compat
                 return resp;
             }
         }
@@ -726,7 +721,7 @@ namespace Network
                   << resp.httpStatusCode << "). Check proxy logs for details.";
             resp.errorMessage = errss.str();
             
-            DEBUG_LOGF("Proxy error: HTTP %d", resp.httpStatusCode);
+            // DEBUG_LOG removed for VC++6.0 compat
             return resp;
         }
         
@@ -734,7 +729,7 @@ namespace Network
         // SUCCESS: Valid response parsed
         // ====================================================================
         resp.status = SUCCESS;
-        DEBUG_LOG("Response parsed successfully");
+        // DEBUG: Response parsed successfully
         
         return resp;
     }
