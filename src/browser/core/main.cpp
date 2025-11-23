@@ -14,6 +14,7 @@
 #include "ui/ui.h"          // UI module public API
 #include "network/network.h" // Network module public API  
 #include "parser/parser.h"  // Parser module public API
+#include <crtdbg.h>
 
 // ============================================================================
 // GLOBAL STATE (Static Lifetime for RAII)
