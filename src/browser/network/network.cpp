@@ -190,20 +190,28 @@ namespace Network
             return resp;
         }
         
-        // 1.2: Validate URL format and length
-        // DEFENSIVE: Check scheme is http:// (not https://, ftp://, file://, etc.)
-        if (url.find("http://") != 0) {
+        // 1.2: Normalize URL - convert https:// to http:// for proxy
+        // RATIONALE: Browser sends http:// to proxy, proxy handles HTTPS upstream
+        std::string normalizedUrl = url;
+        if (normalizedUrl.find("https://") == 0) {
+            // Replace https:// with http:// - proxy will upgrade to HTTPS
+            normalizedUrl = "http://" + normalizedUrl.substr(8);
+        }
+        
+        // 1.3: Validate URL format and length
+        // DEFENSIVE: Check scheme is http:// (after normalization)
+        if (normalizedUrl.find("http://") != 0) {
             resp.status = INVALID_URL;
-            resp.errorMessage = "URL must start with 'http://' (HTTPS not supported - proxy handles it)";
+            resp.errorMessage = "URL must start with 'http://' or 'https://'";
             // DEBUG_LOGF removed for VC++6.0 compat
             return resp;
         }
         
-        if (url.length() > MAX_URL_LENGTH) {
+        if (normalizedUrl.length() > MAX_URL_LENGTH) {
             resp.status = INVALID_URL;
             std::stringstream ss;
             ss << "URL exceeds maximum length (" << MAX_URL_LENGTH 
-               << " chars). Current length: " << url.length();
+               << " chars). Current length: " << normalizedUrl.length();
             resp.errorMessage = ss.str();
             // DEBUG_LOGF removed for VC++6.0 compat
             return resp;
@@ -248,7 +256,7 @@ namespace Network
         // ====================================================================
         // STEP 4: BUILD HTTP REQUEST
         // ====================================================================
-        std::string request = BuildRequest(url);
+        std::string request = BuildRequest(normalizedUrl);
         // DEBUG_LOGF removed for VC++6.0 compat
         
         // ====================================================================

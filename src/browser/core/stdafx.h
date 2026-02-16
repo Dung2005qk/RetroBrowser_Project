@@ -262,10 +262,10 @@ inline void operator delete(void* ptr, const std::nothrow_t&) throw() {
 // RATIONALE: IE5 user-agent ensures maximum compatibility with retro websites
 // and proxy server expectations. Modern sites may reject but that's out-of-scope.
 
-#define PROXY_DEFAULT_HOST      "192.168.56.1"
+#define PROXY_DEFAULT_HOST      "192.168.247.1"
 #define PROXY_DEFAULT_PORT      8080
-// NOTE: Proxy runs on host machine, VM connects via host-only network. Adjust
-// IP in config if using bridged/NAT networking instead.
+// NOTE: Proxy runs on host machine, VM connects via VMware VMnet1 (Host-Only).
+// VMnet1: 192.168.247.1 | VMnet8 (NAT): 192.168.226.1
 
 
 // ============================================================================
